@@ -5,9 +5,7 @@ from fastapi import APIRouter
 from core.api.errors import (
     admin_inactive_error,
     ber,
-    insufficient_reward_points_error,
     invalid_credentials_error,
-    redemption_code_expired_error,
     redemption_code_not_active_error,
     redemption_code_not_found_error,
     unauthorized_error,
@@ -49,18 +47,14 @@ async def admin_login(data: AdminLogin) -> BearerToken:
         unauthorized_error,
         redemption_code_not_found_error,
         redemption_code_not_active_error,
-        redemption_code_expired_error,
     ),
 )
 async def validate_redemption_code(
     _: CurrentAdmin, code: str
 ) -> RedemptionValidationRead:
     redemption = await get_redemption_or_404(code)
-    now = datetime.now(UTC)
-    await sync_redemption_status(redemption, now)
+    await sync_redemption_status(redemption)
 
-    if redemption.status == RedemptionCodeStatus.EXPIRED:
-        raise redemption_code_expired_error
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
 
@@ -72,10 +66,11 @@ async def validate_redemption_code(
         code=redemption.code,
         status=redemption.status,
         requested_points=redemption.requested_points,
-        expires_at=redemption.expires_at,
+        created_at=redemption.created_at,
         user=user.to_read(),
         context=redemption.context,
-        can_confirm=user.reward_points >= redemption.requested_points,
+        items=redemption.items,
+        can_confirm=True,
     )
 
 
@@ -85,34 +80,24 @@ async def validate_redemption_code(
         unauthorized_error,
         redemption_code_not_found_error,
         redemption_code_not_active_error,
-        redemption_code_expired_error,
-        insufficient_reward_points_error,
     ),
 )
 async def confirm_redemption_code(
     admin: CurrentAdmin, code: str
 ) -> RedemptionConfirmRead:
     redemption = await get_redemption_or_404(code)
-    now = datetime.now(UTC)
-    await sync_redemption_status(redemption, now)
+    await sync_redemption_status(redemption)
 
-    if redemption.status == RedemptionCodeStatus.EXPIRED:
-        raise redemption_code_expired_error
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
 
     user = await User.get(redemption.user_id)
     if user is None:
         raise redemption_code_not_found_error
-    if user.reward_points < redemption.requested_points:
-        raise insufficient_reward_points_error
 
-    user.reward_points -= redemption.requested_points
     redemption.status = RedemptionCodeStatus.USED
-    redemption.used_at = now
+    redemption.used_at = redemption.used_at or datetime.now(UTC)
     redemption.used_by_admin_id = admin.id
-
-    await user.save()
     await redemption.save()
 
     return RedemptionConfirmRead(
@@ -121,4 +106,5 @@ async def confirm_redemption_code(
         used_at=redemption.used_at,
         deducted_points=redemption.requested_points,
         user=user.to_read(),
+        items=redemption.items,
     )

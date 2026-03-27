@@ -1,11 +1,12 @@
+from beanie import PydanticObjectId
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 pwd_ctx = CryptContext(schemes=["argon2", "bcrypt"])
 
 
 class PasswordMixin:
-    """Общая логика для работы с паролем."""
+    """Shared password helpers."""
 
     hashed_password: str
 
@@ -22,8 +23,21 @@ class PasswordMixin:
 
 
 class RedemptionContext(BaseModel):
-    """Контекст запроса на списание баллов."""
+    """Optional metadata for a redemption request."""
 
     place: str | None = None
     item: str | None = None
     note: str | None = None
+
+
+class RedemptionPrizeItem(BaseModel):
+    """Snapshot of a selected prize inside a redemption code."""
+
+    prize_id: PydanticObjectId
+    title: str
+    points_cost: int = Field(gt=0)
+    quantity: int = Field(gt=0)
+
+    @property
+    def total_points(self) -> int:
+        return self.points_cost * self.quantity

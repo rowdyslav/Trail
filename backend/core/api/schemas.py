@@ -4,20 +4,16 @@ from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field
 
 from core.domain.rewards import RedemptionCodeStatus, RouteType
-from core.domain.shared import RedemptionContext
+from core.domain.shared import RedemptionContext, RedemptionPrizeItem
 from core.domain.streaks import StreakKey
 
 
 class PlaceRead(BaseModel):
-    """Место маршрута в ответе API."""
-
     id: PydanticObjectId
     title: str
 
 
 class RouteRead(BaseModel):
-    """Маршрут с базовой информацией для клиента."""
-
     id: PydanticObjectId
     title: str
     description: str
@@ -27,9 +23,15 @@ class RouteRead(BaseModel):
     places: list[PlaceRead]
 
 
-class UserRead(BaseModel):
-    """Публичное представление пользователя."""
+class PrizeRead(BaseModel):
+    id: PydanticObjectId
+    title: str
+    description: str
+    points_cost: int
+    is_active: bool
 
+
+class UserRead(BaseModel):
     id: PydanticObjectId
     email: EmailStr
     streak_days: int
@@ -38,42 +40,30 @@ class UserRead(BaseModel):
 
 
 class BearerToken(BaseModel):
-    """Токен авторизации."""
-
     access_token: str
 
 
 class UserRegister(BaseModel):
-    """Данные для регистрации пользователя по почте."""
-
     email: EmailStr
     password: str = Field(min_length=6)
 
 
 class AdminRead(BaseModel):
-    """Публичное представление администратора."""
-
     id: PydanticObjectId
     email: EmailStr
     title: str
 
 
 class AdminLogin(BaseModel):
-    """Данные для входа администратора."""
-
     email: EmailStr
     password: str = Field(min_length=6)
 
 
 class ScanRequest(BaseModel):
-    """Данные запроса на сканирование QR."""
-
     qr_code_value: str
 
 
 class ScanResponse(BaseModel):
-    """Результат обработки скана."""
-
     success: bool
     already_scanned: bool
     route_id: PydanticObjectId
@@ -85,40 +75,46 @@ class ScanResponse(BaseModel):
     completed_at: datetime | None = None
 
 
-class RedemptionRequest(BaseModel):
-    """Запрос пользователя на создание кода списания."""
+class RedemptionPrizeSelection(BaseModel):
+    prize_id: PydanticObjectId
+    quantity: int = Field(gt=0)
 
-    requested_points: int = Field(gt=0)
+
+class RedemptionRequest(BaseModel):
+    items: list[RedemptionPrizeSelection] = Field(min_length=1)
     context: RedemptionContext = Field(default_factory=RedemptionContext)
 
 
 class RedemptionCodeRead(BaseModel):
-    """Код списания для клиентской части."""
-
     code: str
     status: RedemptionCodeStatus
     requested_points: int
-    expires_at: datetime
+    created_at: datetime
+    used_at: datetime | None = None
+    cancelled_at: datetime | None = None
     context: RedemptionContext
+    items: list[RedemptionPrizeItem]
+
+
+class UserProfileRead(UserRead):
+    active_redemptions: list[RedemptionCodeRead] = Field(default_factory=list)
 
 
 class RedemptionValidationRead(BaseModel):
-    """Ответ для проверки кода на стороне администратора."""
-
     code: str
     status: RedemptionCodeStatus
     requested_points: int
-    expires_at: datetime
+    created_at: datetime
     user: UserRead
     context: RedemptionContext
+    items: list[RedemptionPrizeItem]
     can_confirm: bool
 
 
 class RedemptionConfirmRead(BaseModel):
-    """Ответ после подтверждения списания."""
-
     code: str
     status: RedemptionCodeStatus
     used_at: datetime
     deducted_points: int
     user: UserRead
+    items: list[RedemptionPrizeItem]

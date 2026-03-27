@@ -10,18 +10,18 @@ from pymongo import IndexModel
 from .api.schemas import (
     AdminRead,
     PlaceRead,
+    PrizeRead,
     RedemptionCodeRead,
     RouteRead,
+    UserProfileRead,
     UserRead,
 )
 from .domain.rewards import RedemptionCodeStatus, RouteType, generate_redemption_code
-from .domain.shared import PasswordMixin, RedemptionContext
+from .domain.shared import PasswordMixin, RedemptionContext, RedemptionPrizeItem
 from .domain.streaks import StreakKey, calculate_streak_key
 
 
 class User(PasswordMixin, Document):
-    """Пользователь приложения."""
-
     email: Annotated[EmailStr, Indexed(unique=True)]
     hashed_password: str
     streak_days: int = 0
@@ -38,9 +38,13 @@ class User(PasswordMixin, Document):
     def to_read(self) -> UserRead:
         return UserRead(**self.model_dump())
 
-class Admin(PasswordMixin, Document):
-    """Администратор для выдачи наград."""
+    def to_profile_read(
+        self, active_redemptions: list[RedemptionCodeRead]
+    ) -> UserProfileRead:
+        return UserProfileRead(**self.model_dump(), active_redemptions=active_redemptions)
 
+
+class Admin(PasswordMixin, Document):
     email: Annotated[EmailStr, Indexed(unique=True)]
     title: str
     hashed_password: str
@@ -52,9 +56,8 @@ class Admin(PasswordMixin, Document):
     def to_read(self) -> AdminRead:
         return AdminRead(id=self.id, email=self.email, title=self.title)
 
-class Place(Document):
-    """Место маршрута."""
 
+class Place(Document):
     title: str
     qr_code_value: str = Field(unique=True)
 
@@ -66,8 +69,6 @@ class Place(Document):
 
 
 class Route(Document):
-    """Маршрут приложения."""
-
     title: str
     description: str
     route_type: RouteType = RouteType.FREE
@@ -92,9 +93,26 @@ class Route(Document):
         )
 
 
-class PlaceCompletionHistory(Document):
-    """История уникальных завершений мест."""
+class Prize(Document):
+    title: str
+    description: str
+    points_cost: int = Field(gt=0)
+    is_active: bool = True
 
+    class Settings:
+        name = "prizes"
+
+    def to_read(self) -> PrizeRead:
+        return PrizeRead(
+            id=self.id,
+            title=self.title,
+            description=self.description,
+            points_cost=self.points_cost,
+            is_active=self.is_active,
+        )
+
+
+class PlaceCompletionHistory(Document):
     user_id: PydanticObjectId
     place_id: PydanticObjectId
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -107,8 +125,6 @@ class PlaceCompletionHistory(Document):
 
 
 class RouteCompletion(Document):
-    """Фиксация полного завершения маршрута пользователем."""
-
     user_id: PydanticObjectId
     route_id: PydanticObjectId
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -122,17 +138,15 @@ class RouteCompletion(Document):
 
 
 class RedemptionCode(Document):
-    """Код для списания баллов через администратора."""
-
     user_id: PydanticObjectId
     code: Annotated[str, Indexed(unique=True)] = Field(
         default_factory=generate_redemption_code
     )
     status: RedemptionCodeStatus = RedemptionCodeStatus.ACTIVE
     requested_points: int = Field(gt=0)
+    items: list[RedemptionPrizeItem] = Field(default_factory=list)
     context: RedemptionContext = Field(default_factory=RedemptionContext)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    expires_at: datetime
     used_at: datetime | None = None
     cancelled_at: datetime | None = None
     used_by_admin_id: PydanticObjectId | None = None
@@ -141,17 +155,16 @@ class RedemptionCode(Document):
         name = "redemption_codes"
         indexes = [
             IndexModel([("user_id", 1), ("status", 1)]),
-            IndexModel([("expires_at", 1)]),
         ]
-
-    def is_expired(self, now: datetime) -> bool:
-        return now >= self.expires_at
 
     def to_read(self) -> RedemptionCodeRead:
         return RedemptionCodeRead(
             code=self.code,
             status=self.status,
             requested_points=self.requested_points,
-            expires_at=self.expires_at,
+            created_at=self.created_at,
+            used_at=self.used_at,
+            cancelled_at=self.cancelled_at,
             context=self.context,
+            items=self.items,
         )

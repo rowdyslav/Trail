@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from core.api.errors import (
     ber,
     insufficient_reward_points_error,
+    prize_not_found_error,
     redemption_code_generation_error,
     redemption_code_not_active_error,
     redemption_code_not_found_error,
@@ -13,6 +14,7 @@ from core.api.errors import (
 from core.api.schemas import RedemptionCodeRead, RedemptionRequest
 from core.deps import CurrentUser
 from core.domain.redemptions import (
+    build_redemption_items,
     create_unique_redemption_code,
     get_user_redemption_or_404,
     sync_redemption_status,
@@ -27,20 +29,35 @@ router = APIRouter(prefix="/redemptions", tags=["Redemptions"])
     responses=ber(
         unauthorized_error,
         insufficient_reward_points_error,
+        prize_not_found_error,
         redemption_code_generation_error,
     ),
 )
 async def request_redemption_code(
     me: CurrentUser, data: RedemptionRequest
 ) -> RedemptionCodeRead:
-    if me.reward_points < data.requested_points:
+    items, requested_points = await build_redemption_items(
+        [(item.prize_id, item.quantity) for item in data.items]
+    )
+    if me.reward_points < requested_points:
         raise insufficient_reward_points_error
 
-    redemption = await create_unique_redemption_code(
-        user_id=me.id,
-        requested_points=data.requested_points,
-        context=data.context,
-    )
+    previous_points = me.reward_points
+    me.reward_points -= requested_points
+    await me.save()
+
+    try:
+        redemption = await create_unique_redemption_code(
+            user_id=me.id,
+            requested_points=requested_points,
+            context=data.context,
+            items=items,
+        )
+    except Exception:
+        me.reward_points = previous_points
+        await me.save()
+        raise
+
     return redemption.to_read()
 
 
@@ -50,7 +67,7 @@ async def request_redemption_code(
 )
 async def read_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead:
     redemption = await get_user_redemption_or_404(me.id, code)
-    await sync_redemption_status(redemption, datetime.now(UTC))
+    await sync_redemption_status(redemption)
     return redemption.to_read()
 
 
@@ -64,15 +81,14 @@ async def read_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead
 )
 async def cancel_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead:
     redemption = await get_user_redemption_or_404(me.id, code)
-
-    now = datetime.now(UTC)
-    await sync_redemption_status(redemption, now)
-    if redemption.status == RedemptionCodeStatus.EXPIRED:
-        raise redemption_code_not_active_error
+    await sync_redemption_status(redemption)
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
 
+    me.reward_points += redemption.requested_points
     redemption.status = RedemptionCodeStatus.CANCELLED
-    redemption.cancelled_at = now
+    redemption.cancelled_at = datetime.now(UTC)
+
+    await me.save()
     await redemption.save()
     return redemption.to_read()

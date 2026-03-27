@@ -1,34 +1,24 @@
-from datetime import UTC, datetime
+from collections import OrderedDict
 
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 
 from core.api.errors import (
+    prize_not_found_error,
     redemption_code_generation_error,
     redemption_code_not_found_error,
 )
-from core.domain.rewards import (
-    REDEMPTION_CODE_TTL,
-    RedemptionCodeStatus,
-    generate_redemption_code,
-)
-from core.domain.shared import RedemptionContext
-from core.models import RedemptionCode
-
-
-def build_redemption_expires_at(now: datetime | None = None) -> datetime:
-    """Возвращает время истечения срока действия кода."""
-    return (now or datetime.now(UTC)) + REDEMPTION_CODE_TTL
+from core.domain.rewards import RedemptionCodeStatus, generate_redemption_code
+from core.domain.shared import RedemptionContext, RedemptionPrizeItem
+from core.models import Prize, RedemptionCode
 
 
 async def create_unique_redemption_code(
     user_id: PydanticObjectId,
     requested_points: int,
     context: RedemptionContext,
+    items: list[RedemptionPrizeItem],
 ) -> RedemptionCode:
-    """Создает уникальный код списания с ограниченным числом попыток."""
-    expires_at = build_redemption_expires_at()
-
     for _ in range(10):
         try:
             return await RedemptionCode(
@@ -36,7 +26,7 @@ async def create_unique_redemption_code(
                 code=generate_redemption_code(),
                 requested_points=requested_points,
                 context=context,
-                expires_at=expires_at,
+                items=items,
             ).insert()
         except DuplicateKeyError:
             continue
@@ -45,7 +35,6 @@ async def create_unique_redemption_code(
 
 
 async def get_redemption_or_404(code: str) -> RedemptionCode:
-    """Возвращает код списания по строковому значению."""
     redemption = await RedemptionCode.find_one(RedemptionCode.code == code)
     if redemption is None:
         raise redemption_code_not_found_error
@@ -55,7 +44,6 @@ async def get_redemption_or_404(code: str) -> RedemptionCode:
 async def get_user_redemption_or_404(
     user_id: PydanticObjectId, code: str
 ) -> RedemptionCode:
-    """Возвращает код списания конкретного пользователя."""
     redemption = await RedemptionCode.find_one(
         RedemptionCode.code == code,
         RedemptionCode.user_id == user_id,
@@ -65,15 +53,47 @@ async def get_user_redemption_or_404(
     return redemption
 
 
-async def sync_redemption_status(
-    redemption: RedemptionCode, now: datetime | None = None
-) -> RedemptionCode:
-    """Синхронизирует статус кода, если срок действия истек."""
-    current_time = now or datetime.now(UTC)
-    if (
-        redemption.status == RedemptionCodeStatus.ACTIVE
-        and redemption.is_expired(current_time)
-    ):
-        redemption.status = RedemptionCodeStatus.EXPIRED
-        await redemption.save()
+async def list_user_active_redemptions(
+    user_id: PydanticObjectId,
+) -> list[RedemptionCode]:
+    return await RedemptionCode.find(
+        RedemptionCode.user_id == user_id,
+        RedemptionCode.status == RedemptionCodeStatus.ACTIVE,
+    ).sort("-created_at").to_list()
+
+
+async def build_redemption_items(
+    selections: list[tuple[PydanticObjectId, int]],
+) -> tuple[list[RedemptionPrizeItem], int]:
+    quantities: OrderedDict[PydanticObjectId, int] = OrderedDict()
+    for prize_id, quantity in selections:
+        quantities[prize_id] = quantities.get(prize_id, 0) + quantity
+
+    prize_ids = list(quantities)
+    prizes = await Prize.find({"_id": {"$in": prize_ids}, "is_active": True}).to_list()
+    prizes_by_id = {prize.id: prize for prize in prizes}
+
+    if len(prizes_by_id) != len(prize_ids):
+        raise prize_not_found_error
+
+    items: list[RedemptionPrizeItem] = []
+    requested_points = 0
+    for prize_id, quantity in quantities.items():
+        prize = prizes_by_id.get(prize_id)
+        if prize is None:
+            raise prize_not_found_error
+
+        item = RedemptionPrizeItem(
+            prize_id=prize.id,
+            title=prize.title,
+            points_cost=prize.points_cost,
+            quantity=quantity,
+        )
+        items.append(item)
+        requested_points += item.total_points
+
+    return items, requested_points
+
+
+async def sync_redemption_status(redemption: RedemptionCode) -> RedemptionCode:
     return redemption
