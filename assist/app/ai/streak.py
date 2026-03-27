@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.ai.common import REACTION_STYLE_GUIDE, build_context_prompt, generate_reaction_message
-from app.ai.deepseek_client import DeepSeekClient
+from .common import REACTION_STYLE_GUIDE, build_context_prompt, generate_reaction_message
+from .deepseek_client import DeepSeekClient
 
 
 def _streak_system_prompt() -> str:

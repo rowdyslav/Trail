@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from app.ai.app_return import generate_app_return_message
-from app.ai.deepseek_client import DeepSeekClient
-from app.ai.level_up import generate_level_up_message
-from app.ai.scan_success import generate_scan_success_message
-from app.ai.streak import generate_streak_message
-from app.ai.types import AvatarEventType, AvatarReactionMap
+from .app_return import generate_app_return_message
+from .deepseek_client import DeepSeekClient
+from .level_up import generate_level_up_message
+from .scan_success import generate_scan_success_message
+from .streak import generate_streak_message
+from .types import AvatarEventType, AvatarReactionMap
 
 
 SCAN_EVENT: AvatarEventType = "on_scan_success"

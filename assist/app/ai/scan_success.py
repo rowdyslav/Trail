@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.ai.deepseek_client import DeepSeekClient
-from app.ai.facts import generate_fact
+from .deepseek_client import DeepSeekClient
+from .facts import generate_fact
 
 
 async def generate_scan_success_message(

@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from app.data.types import PlaceRecord
+from .types import PlaceRecord
 
 
 DATASET_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "ryazan_places_dataset.json"

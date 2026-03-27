@@ -5,7 +5,7 @@ from typing import TypedDict
 import requests
 import uplink
 
-from app.config import get_settings
+from ..config import get_settings
 
 
 class ChatMessage(TypedDict):

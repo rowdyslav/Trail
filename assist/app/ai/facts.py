@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 
-from app.ai.common import normalize_text
-from app.ai.deepseek_client import DeepSeekClient
-from app.config import get_settings
+from .common import normalize_text
+from .deepseek_client import DeepSeekClient
+from ..config import get_settings
 
 
 def _fact_system_prompt() -> str:
