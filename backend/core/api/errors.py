@@ -35,9 +35,9 @@ route_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Маршрут не найден",
 )
-point_not_found_error = HTTPException(
+place_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
-    detail="Точка не найдена",
+    detail="Место не найдено",
 )
 redemption_code_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,

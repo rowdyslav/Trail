@@ -9,7 +9,7 @@ from pymongo import IndexModel
 
 from .api.schemas import (
     AdminRead,
-    PointRead,
+    PlaceRead,
     RedemptionCodeRead,
     RouteRead,
     UserRead,
@@ -52,17 +52,17 @@ class Admin(PasswordMixin, Document):
     def to_read(self) -> AdminRead:
         return AdminRead(id=self.id, email=self.email, title=self.title)
 
-class Point(Document):
-    """Точка маршрута."""
+class Place(Document):
+    """Место маршрута."""
 
     title: str
     qr_code_value: str = Field(unique=True)
 
     class Settings:
-        name = "points"
+        name = "places"
 
-    def to_read(self) -> PointRead:
-        return PointRead(id=self.id, title=self.title)
+    def to_read(self) -> PlaceRead:
+        return PlaceRead(id=self.id, title=self.title)
 
 
 class Route(Document):
@@ -72,13 +72,13 @@ class Route(Document):
     description: str
     route_type: RouteType = RouteType.FREE
     reward_points_on_completion: int = 0
-    points: list[Link[Point]] = Field(default_factory=list)
+    places: list[Link[Place]] = Field(default_factory=list)
 
     class Settings:
         name = "routes"
 
-    def has_point(self, point_id: PydanticObjectId) -> bool:
-        return any(point.id == point_id for point in self.points)
+    def has_place(self, place_id: PydanticObjectId) -> bool:
+        return any(place.id == place_id for place in self.places)
 
     def to_read(self) -> RouteRead:
         return RouteRead(
@@ -87,22 +87,22 @@ class Route(Document):
             description=self.description,
             route_type=self.route_type,
             reward_points_on_completion=self.reward_points_on_completion,
-            points_total=len(self.points),
-            points=[point.to_read() for point in self.points],
+            places_total=len(self.places),
+            places=[place.to_read() for place in self.places],
         )
 
 
-class PointCompletionHistory(Document):
-    """История уникальных завершений точек."""
+class PlaceCompletionHistory(Document):
+    """История уникальных завершений мест."""
 
     user_id: PydanticObjectId
-    point_id: PydanticObjectId
+    place_id: PydanticObjectId
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     class Settings:
-        name = "point_completion_history"
+        name = "place_completion_history"
         indexes = [
-            IndexModel([("user_id", 1), ("point_id", 1)], unique=True),
+            IndexModel([("user_id", 1), ("place_id", 1)], unique=True),
         ]
 
 

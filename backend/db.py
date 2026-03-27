@@ -4,8 +4,8 @@ from pymongo import AsyncMongoClient
 from core.domain.rewards import RouteType
 from core.models import (
     Admin,
-    Point,
-    PointCompletionHistory,
+    Place,
+    PlaceCompletionHistory,
     RedemptionCode,
     Route,
     RouteCompletion,
@@ -22,7 +22,7 @@ DEMO_ROUTES = (
         "description": "Короткий маршрут по главным точкам центра города.",
         "route_type": RouteType.FREE,
         "reward_points_on_completion": 0,
-        "points": (
+        "places": (
             {
                 "title": "Старая площадь",
                 "qr_code_value": "center-square-001",
@@ -38,7 +38,7 @@ DEMO_ROUTES = (
         "description": "Маршрут по зеленой зоне с наградой после полного прохождения.",
         "route_type": RouteType.PAID,
         "reward_points_on_completion": 150,
-        "points": (
+        "places": (
             {
                 "title": "Главный вход в парк",
                 "qr_code_value": "park-gate-001",
@@ -62,13 +62,13 @@ DEMO_ADMINS = (
 
 async def has_actual_demo_data() -> bool:
     routes = await Route.find({}, fetch_links=True).to_list()
-    points = await Point.find_all().to_list()
+    places = await Place.find_all().to_list()
 
     if len(routes) != len(DEMO_ROUTES):
         return False
-    if len(points) != sum(len(route["points"]) for route in DEMO_ROUTES):
+    if len(places) != sum(len(route["places"]) for route in DEMO_ROUTES):
         return False
-    if any(len(route.points) == 0 for route in routes):
+    if any(len(route.places) == 0 for route in routes):
         return False
 
     actual_route_signatures = {
@@ -76,7 +76,7 @@ async def has_actual_demo_data() -> bool:
             route.title,
             route.route_type,
             route.reward_points_on_completion,
-            tuple(point.qr_code_value for point in route.points),
+            tuple(place.qr_code_value for place in route.places),
         )
         for route in routes
     }
@@ -85,7 +85,7 @@ async def has_actual_demo_data() -> bool:
             route["title"],
             route["route_type"],
             route["reward_points_on_completion"],
-            tuple(point["qr_code_value"] for point in route["points"]),
+            tuple(place["qr_code_value"] for place in route["places"]),
         )
         for route in DEMO_ROUTES
     }
@@ -96,22 +96,22 @@ async def seed_demo_routes() -> None:
     if await has_actual_demo_data():
         return
 
-    await PointCompletionHistory.get_pymongo_collection().delete_many({})
+    await PlaceCompletionHistory.get_pymongo_collection().delete_many({})
     await RouteCompletion.get_pymongo_collection().delete_many({})
     await RedemptionCode.get_pymongo_collection().delete_many({})
     await Route.get_pymongo_collection().delete_many({})
-    await Point.get_pymongo_collection().delete_many({})
+    await Place.get_pymongo_collection().delete_many({})
 
     for route_data in DEMO_ROUTES:
-        points = [
-            await Point(**point_data).insert() for point_data in route_data["points"]
+        places = [
+            await Place(**place_data).insert() for place_data in route_data["places"]
         ]
         await Route(
             title=route_data["title"],
             description=route_data["description"],
             route_type=route_data["route_type"],
             reward_points_on_completion=route_data["reward_points_on_completion"],
-            points=points,
+            places=places,
         ).insert()
 
 
@@ -142,8 +142,8 @@ async def init_db() -> None:
             User,
             Admin,
             Route,
-            Point,
-            PointCompletionHistory,
+            Place,
+            PlaceCompletionHistory,
             RouteCompletion,
             RedemptionCode,
         ],

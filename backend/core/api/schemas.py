@@ -8,8 +8,8 @@ from core.domain.shared import RedemptionContext
 from core.domain.streaks import StreakKey
 
 
-class PointRead(BaseModel):
-    """Точка маршрута в ответе API."""
+class PlaceRead(BaseModel):
+    """Место маршрута в ответе API."""
 
     id: PydanticObjectId
     title: str
@@ -23,8 +23,8 @@ class RouteRead(BaseModel):
     description: str
     route_type: RouteType
     reward_points_on_completion: int
-    points_total: int
-    points: list[PointRead]
+    places_total: int
+    places: list[PlaceRead]
 
 
 class UserRead(BaseModel):
@@ -83,7 +83,7 @@ class ScanResponse(BaseModel):
     reward_granted: bool
     reward_points_granted: int
     user: UserRead
-    point: PointRead
+    place: PlaceRead
     completed_at: datetime | None = None
 
 
