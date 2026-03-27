@@ -1,4 +1,7 @@
 export type CheckpointStatus = 'locked' | 'available' | 'completed'
+export type RouteAccessType = 'free' | 'paid'
+export type RedemptionRequestStatus = 'created' | 'issued'
+export type RedemptionRequestKind = 'reward' | 'custom_amount'
 
 export interface Reward {
   title: string
@@ -26,6 +29,21 @@ export interface RouteDetails {
   distance: string
   checkpoints: Checkpoint[]
   progress: number
+}
+
+export interface CatalogRoute {
+  id: string
+  city: string
+  title: string
+  description: string
+  distanceLabel: string
+  durationLabel: string
+  image: string
+  accessType: RouteAccessType
+  priceLabel?: string
+  pricePoints?: number
+  purchased?: boolean
+  isActive?: boolean
 }
 
 export interface Badge {
@@ -72,11 +90,35 @@ export interface UpgradeItem {
   locked?: boolean
 }
 
+export interface RewardOption {
+  id: string
+  title: string
+  description: string
+  pointsCost: number
+}
+
+export interface RedemptionRequest {
+  id: string
+  code: string
+  status: RedemptionRequestStatus
+  kind: RedemptionRequestKind
+  userName: string
+  createdAt: string
+  preferredRewardId?: string
+  preferredPointsAmount?: number
+  issuedRewardId?: string
+  issuedPointsAmount?: number
+  confirmedAt?: string
+}
+
 export interface UserProfile {
+  id: string
+  email?: string
   name: string
   title: string
   level: number
   xp: number
+  rewardPointsBalance: number
   streakDays: number
   nextLevelXp: number
   avatarStage: number

@@ -1,7 +1,10 @@
 import type {
+  CatalogRoute,
   DailyMission,
   Landmark,
   ProfileStat,
+  RedemptionRequest,
+  RewardOption,
   RouteDetails,
   SuggestedRoute,
   UpgradeItem,
@@ -23,7 +26,7 @@ export const mockRoute: Omit<RouteDetails, 'progress'> = {
       title: 'Успенский собор',
       subtitle: 'Старт маршрута',
       hint: 'Подойдите к западному фасаду и найдите табличку с датой освящения.',
-      storyBeat: 'Маршрут начинается у главной доминанты Кремля и задает исторический контекст прогулки.',
+      storyBeat: 'Маршрут начинается у главной доминанты Кремля и задаёт исторический контекст прогулки.',
       xp: 120,
       status: 'completed',
       reward: {
@@ -36,7 +39,7 @@ export const mockRoute: Omit<RouteDetails, 'progress'> = {
       title: 'Соборная площадь',
       subtitle: 'Текущая точка',
       hint: 'Наведите камеру на план площади возле колокольни.',
-      storyBeat: 'Здесь игрок понимает, куда ведет маршрут дальше, и получает главный сюжетный переход.',
+      storyBeat: 'Здесь игрок понимает, куда ведёт маршрут дальше, и получает главный сюжетный переход.',
       xp: 160,
       status: 'available',
       reward: {
@@ -48,7 +51,7 @@ export const mockRoute: Omit<RouteDetails, 'progress'> = {
       id: 'viewpoint',
       title: 'Смотровая у вала',
       subtitle: 'Финал маршрута',
-      hint: 'После площади маршрут поведет к валу, где откроется финальная панорама.',
+      hint: 'После площади маршрут поведёт к валу, где откроется финальная панорама.',
       storyBeat: 'Финальная точка завершает MVP-цикл: пройти, сканировать, получить награду.',
       xp: 220,
       status: 'locked',
@@ -61,10 +64,12 @@ export const mockRoute: Omit<RouteDetails, 'progress'> = {
 }
 
 export const mockUser: UserProfile = {
+  id: 'user-explorer-ryazan',
   name: 'Explorer Ryazan',
   title: 'Старший проводник',
   level: 12,
   xp: 1250,
+  rewardPointsBalance: 480,
   streakDays: 12,
   nextLevelXp: 2000,
   avatarStage: 2,
@@ -74,6 +79,82 @@ export const mockUser: UserProfile = {
     { id: 'streak', title: 'Серия 12 дней', tone: 'bg-sky-100 text-sky-900' },
   ],
 }
+
+export const catalogRoutes: CatalogRoute[] = [
+  {
+    id: 'ryazan-kremlin',
+    city: 'Рязань',
+    title: 'Прогулка по Рязанскому Кремлю',
+    description: 'Короткий городской квест с checkpoint-механикой, QR-сканированием и наградами.',
+    distanceLabel: '2.4 км',
+    durationLabel: '35 минут',
+    image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=1200&q=80',
+    accessType: 'free',
+    priceLabel: 'Бесплатно',
+    purchased: true,
+    isActive: true,
+  },
+  {
+    id: 'cathedral-park',
+    city: 'Рязань',
+    title: 'Тайны Соборного парка',
+    description: 'Лёгкий маршрут для первого знакомства с городом и игровыми механиками.',
+    distanceLabel: '1.8 км',
+    durationLabel: '25 минут',
+    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80',
+    accessType: 'free',
+    priceLabel: 'Бесплатно',
+    purchased: true,
+  },
+  {
+    id: 'esenin-premium',
+    city: 'Константиново',
+    title: 'По следам Есенина',
+    description: 'Расширенный сюжетный маршрут с премиальными точками и дополнительными наградами.',
+    distanceLabel: '4.1 км',
+    durationLabel: '65 минут',
+    image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200&q=80',
+    accessType: 'paid',
+    priceLabel: '399 ₽',
+    purchased: false,
+  },
+  {
+    id: 'art-walk-premium',
+    city: 'Рязань',
+    title: 'Арт-прогулка',
+    description: 'Платный маршрут по современным городским точкам с дополнительными историями.',
+    distanceLabel: '3.2 км',
+    durationLabel: '50 минут',
+    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+    accessType: 'paid',
+    priceLabel: '250 очков',
+    pricePoints: 250,
+    purchased: true,
+  },
+]
+
+export const rewardOptions: RewardOption[] = [
+  {
+    id: 'coffee',
+    title: 'Кофе у партнёра',
+    description: 'Быстрый обмен очков на напиток в туристической точке.',
+    pointsCost: 150,
+  },
+  {
+    id: 'souvenir',
+    title: 'Сувенирный стикерпак',
+    description: 'Набор фирменных наклеек Trail для посетителей маршрутов.',
+    pointsCost: 220,
+  },
+  {
+    id: 'premium-discount',
+    title: 'Скидка на платный маршрут',
+    description: 'Списание очков вместо оплаты части стоимости премиального маршрута.',
+    pointsCost: 300,
+  },
+]
+
+export const initialRedemptionRequests: RedemptionRequest[] = []
 
 export const dailyMissions: DailyMission[] = [
   {
@@ -157,7 +238,7 @@ export const avatarStages = [
     description: 'Первый шаг в городском квесте.',
     accent: 'from-slate-300 to-slate-200',
     ring: 'border-slate-300',
-    emoji: '🧢',
+    emoji: '🧭',
   },
   {
     id: 1,

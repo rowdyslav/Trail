@@ -14,6 +14,7 @@ const navItems = [
 export function AppShell() {
   const location = useLocation()
   const user = useGameStore((state) => state.user)
+  const openScan = useGameStore((state) => state.openScan)
 
   return (
     <div className="min-h-screen bg-[#f9faf6] text-[#1a1c1a]">
@@ -62,7 +63,7 @@ export function AppShell() {
 
         <button
           type="button"
-          // onClick={openScan} TODO
+          onClick={openScan}
           className="flex flex-col items-center justify-center px-5 py-2 text-[#404943] transition-opacity hover:opacity-80"
         >
           <MdOutlineQrCodeScanner className="text-[24px]" />
