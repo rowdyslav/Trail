@@ -18,7 +18,7 @@ from core.api.schemas import (
 )
 from core.auth import admin_login_manager
 from core.deps import CurrentAdmin
-from core.domain.redemptions import get_redemption_or_404, sync_redemption_status
+from core.domain.redemptions import get_redemption_or_404
 from core.domain.rewards import RedemptionCodeStatus
 from core.models import Admin, User
 
@@ -53,7 +53,6 @@ async def read_redemption_code_validation(
     _: CurrentAdmin, code: str
 ) -> RedemptionValidationRead:
     redemption = await get_redemption_or_404(code)
-    await sync_redemption_status(redemption)
 
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
@@ -68,7 +67,6 @@ async def read_redemption_code_validation(
         requested_points=redemption.requested_points,
         created_at=redemption.created_at,
         user=user.to_read(),
-        context=redemption.context,
         items=redemption.items,
         can_confirm=True,
     )
@@ -82,11 +80,8 @@ async def read_redemption_code_validation(
         redemption_code_not_active_error,
     ),
 )
-async def confirm_redemption_code(
-    admin: CurrentAdmin, code: str
-) -> RedemptionConfirmRead:
+async def confirm_redemption_code(_: CurrentAdmin, code: str) -> RedemptionConfirmRead:
     redemption = await get_redemption_or_404(code)
-    await sync_redemption_status(redemption)
 
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
@@ -97,7 +92,6 @@ async def confirm_redemption_code(
 
     redemption.status = RedemptionCodeStatus.USED
     redemption.used_at = redemption.used_at or datetime.now(UTC)
-    redemption.used_by_admin_id = admin.id
     await redemption.save()
 
     return RedemptionConfirmRead(

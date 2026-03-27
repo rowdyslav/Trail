@@ -4,7 +4,7 @@ from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field
 
 from core.domain.rewards import RedemptionCodeStatus, RouteType
-from core.domain.shared import RedemptionContext, RedemptionPrizeItem
+from core.domain.shared import RedemptionPrizeItem
 from core.domain.streaks import StreakKey
 
 
@@ -48,12 +48,6 @@ class UserRegister(BaseModel):
     password: str = Field(min_length=6)
 
 
-class AdminRead(BaseModel):
-    id: PydanticObjectId
-    email: EmailStr
-    title: str
-
-
 class AdminLogin(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
@@ -82,7 +76,6 @@ class RedemptionPrizeSelection(BaseModel):
 
 class RedemptionRequest(BaseModel):
     items: list[RedemptionPrizeSelection] = Field(min_length=1)
-    context: RedemptionContext = Field(default_factory=RedemptionContext)
 
 
 class RedemptionCodeRead(BaseModel):
@@ -92,7 +85,6 @@ class RedemptionCodeRead(BaseModel):
     created_at: datetime
     used_at: datetime | None = None
     cancelled_at: datetime | None = None
-    context: RedemptionContext
     items: list[RedemptionPrizeItem]
 
 
@@ -106,7 +98,6 @@ class RedemptionValidationRead(BaseModel):
     requested_points: int
     created_at: datetime
     user: UserRead
-    context: RedemptionContext
     items: list[RedemptionPrizeItem]
     can_confirm: bool
 

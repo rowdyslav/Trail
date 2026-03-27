@@ -9,14 +9,13 @@ from core.api.errors import (
     redemption_code_not_found_error,
 )
 from core.domain.rewards import RedemptionCodeStatus, generate_redemption_code
-from core.domain.shared import RedemptionContext, RedemptionPrizeItem
+from core.domain.shared import RedemptionPrizeItem
 from core.models import Prize, RedemptionCode
 
 
 async def create_unique_redemption_code(
     user_id: PydanticObjectId,
     requested_points: int,
-    context: RedemptionContext,
     items: list[RedemptionPrizeItem],
 ) -> RedemptionCode:
     for _ in range(10):
@@ -25,7 +24,6 @@ async def create_unique_redemption_code(
                 user_id=user_id,
                 code=generate_redemption_code(),
                 requested_points=requested_points,
-                context=context,
                 items=items,
             ).insert()
         except DuplicateKeyError:
@@ -56,10 +54,14 @@ async def get_user_redemption_or_404(
 async def list_user_active_redemptions(
     user_id: PydanticObjectId,
 ) -> list[RedemptionCode]:
-    return await RedemptionCode.find(
-        RedemptionCode.user_id == user_id,
-        RedemptionCode.status == RedemptionCodeStatus.ACTIVE,
-    ).sort("-created_at").to_list()
+    return (
+        await RedemptionCode.find(
+            RedemptionCode.user_id == user_id,
+            RedemptionCode.status == RedemptionCodeStatus.ACTIVE,
+        )
+        .sort("-created_at")
+        .to_list()
+    )
 
 
 async def build_redemption_items(
@@ -93,7 +95,3 @@ async def build_redemption_items(
         requested_points += item.total_points
 
     return items, requested_points
-
-
-async def sync_redemption_status(redemption: RedemptionCode) -> RedemptionCode:
-    return redemption

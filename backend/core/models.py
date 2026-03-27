@@ -8,7 +8,6 @@ from pydantic import EmailStr, Field
 from pymongo import IndexModel
 
 from .api.schemas import (
-    AdminRead,
     PlaceRead,
     PrizeRead,
     RedemptionCodeRead,
@@ -17,7 +16,7 @@ from .api.schemas import (
     UserRead,
 )
 from .domain.rewards import RedemptionCodeStatus, RouteType, generate_redemption_code
-from .domain.shared import PasswordMixin, RedemptionContext, RedemptionPrizeItem
+from .domain.shared import PasswordMixin, RedemptionPrizeItem
 from .domain.streaks import StreakKey, calculate_streak_key
 
 
@@ -41,7 +40,9 @@ class User(PasswordMixin, Document):
     def to_profile_read(
         self, active_redemptions: list[RedemptionCodeRead]
     ) -> UserProfileRead:
-        return UserProfileRead(**self.model_dump(), active_redemptions=active_redemptions)
+        return UserProfileRead(
+            **self.model_dump(), active_redemptions=active_redemptions
+        )
 
 
 class Admin(PasswordMixin, Document):
@@ -52,9 +53,6 @@ class Admin(PasswordMixin, Document):
 
     class Settings:
         name = "admins"
-
-    def to_read(self) -> AdminRead:
-        return AdminRead(id=self.id, email=self.email, title=self.title)
 
 
 class Place(Document):
@@ -145,11 +143,9 @@ class RedemptionCode(Document):
     status: RedemptionCodeStatus = RedemptionCodeStatus.ACTIVE
     requested_points: int = Field(gt=0)
     items: list[RedemptionPrizeItem] = Field(default_factory=list)
-    context: RedemptionContext = Field(default_factory=RedemptionContext)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     used_at: datetime | None = None
     cancelled_at: datetime | None = None
-    used_by_admin_id: PydanticObjectId | None = None
 
     class Settings:
         name = "redemption_codes"
@@ -165,6 +161,5 @@ class RedemptionCode(Document):
             created_at=self.created_at,
             used_at=self.used_at,
             cancelled_at=self.cancelled_at,
-            context=self.context,
             items=self.items,
         )

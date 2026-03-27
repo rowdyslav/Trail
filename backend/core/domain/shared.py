@@ -22,14 +22,6 @@ class PasswordMixin:
         return valid
 
 
-class RedemptionContext(BaseModel):
-    """Optional metadata for a redemption request."""
-
-    place: str | None = None
-    item: str | None = None
-    note: str | None = None
-
-
 class RedemptionPrizeItem(BaseModel):
     """Snapshot of a selected prize inside a redemption code."""
 

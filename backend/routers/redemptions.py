@@ -17,7 +17,6 @@ from core.domain.redemptions import (
     build_redemption_items,
     create_unique_redemption_code,
     get_user_redemption_or_404,
-    sync_redemption_status,
 )
 from core.domain.rewards import RedemptionCodeStatus
 
@@ -50,7 +49,6 @@ async def create_redemption_code(
         redemption = await create_unique_redemption_code(
             user_id=me.id,
             requested_points=requested_points,
-            context=data.context,
             items=items,
         )
     except Exception:
@@ -67,7 +65,6 @@ async def create_redemption_code(
 )
 async def read_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead:
     redemption = await get_user_redemption_or_404(me.id, code)
-    await sync_redemption_status(redemption)
     return redemption.to_read()
 
 
@@ -81,7 +78,6 @@ async def read_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead
 )
 async def cancel_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead:
     redemption = await get_user_redemption_or_404(me.id, code)
-    await sync_redemption_status(redemption)
     if redemption.status != RedemptionCodeStatus.ACTIVE:
         raise redemption_code_not_active_error
 
