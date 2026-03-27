@@ -4,24 +4,30 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from beanie import Document, Indexed, Link, PydanticObjectId
-from passlib.context import CryptContext
-from pydantic import Field
+from pydantic import EmailStr, Field
 from pymongo import IndexModel
 
-from .schemas import PointRead, RouteRead, UserRead
-from .streaks import StreakKey, calculate_streak_key
+from .api.schemas import (
+    AdminRead,
+    PointRead,
+    RedemptionCodeRead,
+    RouteRead,
+    UserRead,
+)
+from .domain.rewards import RedemptionCodeStatus, RouteType, generate_redemption_code
+from .domain.shared import PasswordMixin, RedemptionContext
+from .domain.streaks import StreakKey, calculate_streak_key
 
-pwd_ctx = CryptContext(schemes=["argon2", "bcrypt"])
 
+class User(PasswordMixin, Document):
+    """Пользователь приложения."""
 
-class User(Document):
-    """MVP-модель пользователя приложения."""
-
-    email: Annotated[str, Indexed(unique=True)]
+    email: Annotated[EmailStr, Indexed(unique=True)]
     username: Annotated[str, Indexed(unique=True)]
     hashed_password: str
     streak_days: int = 0
     streak_key: StreakKey = StreakKey.NOVICE
+    reward_points: int = 0
     last_completed_at: datetime | None = None
 
     class Settings:
@@ -33,20 +39,22 @@ class User(Document):
     def to_read(self) -> UserRead:
         return UserRead(**self.model_dump())
 
-    @classmethod
-    def hash_password(cls, plain_password: str) -> str:
-        return pwd_ctx.hash(plain_password)
+class Admin(PasswordMixin, Document):
+    """Администратор для выдачи наград."""
 
-    async def verify_password(self, password: str) -> bool:
-        valid, new_hash = pwd_ctx.verify_and_update(password, self.hashed_password)
-        if new_hash is not None:
-            self.hashed_password = new_hash
-            await self.save()
-        return valid
+    email: Annotated[EmailStr, Indexed(unique=True)]
+    title: str
+    hashed_password: str
+    is_active: bool = True
 
+    class Settings:
+        name = "admins"
+
+    def to_read(self) -> AdminRead:
+        return AdminRead(id=self.id, email=self.email, title=self.title)
 
 class Point(Document):
-    """MVP-модель точки маршрута."""
+    """Точка маршрута."""
 
     title: str
     qr_code_value: str = Field(unique=True)
@@ -59,20 +67,28 @@ class Point(Document):
 
 
 class Route(Document):
-    """MVP-модель маршрута."""
+    """Маршрут приложения."""
 
     title: str
     description: str
+    route_type: RouteType = RouteType.FREE
+    reward_points_on_completion: int = 0
     points: list[Link[Point]] = Field(default_factory=list)
 
     class Settings:
         name = "routes"
+
+    def has_point(self, point_id: PydanticObjectId) -> bool:
+        return any(point.id == point_id for point in self.points)
 
     def to_read(self) -> RouteRead:
         return RouteRead(
             id=self.id,
             title=self.title,
             description=self.description,
+            route_type=self.route_type,
+            reward_points_on_completion=self.reward_points_on_completion,
+            points_total=len(self.points),
             points=[point.to_read() for point in self.points],
         )
 
@@ -89,3 +105,54 @@ class PointCompletionHistory(Document):
         indexes = [
             IndexModel([("user_id", 1), ("point_id", 1)], unique=True),
         ]
+
+
+class RouteCompletion(Document):
+    """Фиксация полного завершения маршрута пользователем."""
+
+    user_id: PydanticObjectId
+    route_id: PydanticObjectId
+    completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    reward_points_granted: int = 0
+
+    class Settings:
+        name = "route_completions"
+        indexes = [
+            IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
+        ]
+
+
+class RedemptionCode(Document):
+    """Код для списания баллов через администратора."""
+
+    user_id: PydanticObjectId
+    code: Annotated[str, Indexed(unique=True)] = Field(
+        default_factory=generate_redemption_code
+    )
+    status: RedemptionCodeStatus = RedemptionCodeStatus.ACTIVE
+    requested_points: int = Field(gt=0)
+    context: RedemptionContext = Field(default_factory=RedemptionContext)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    expires_at: datetime
+    used_at: datetime | None = None
+    cancelled_at: datetime | None = None
+    used_by_admin_id: PydanticObjectId | None = None
+
+    class Settings:
+        name = "redemption_codes"
+        indexes = [
+            IndexModel([("user_id", 1), ("status", 1)]),
+            IndexModel([("expires_at", 1)]),
+        ]
+
+    def is_expired(self, now: datetime) -> bool:
+        return now >= self.expires_at
+
+    def to_read(self) -> RedemptionCodeRead:
+        return RedemptionCodeRead(
+            code=self.code,
+            status=self.status,
+            requested_points=self.requested_points,
+            expires_at=self.expires_at,
+            context=self.context,
+        )

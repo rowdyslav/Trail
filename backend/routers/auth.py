@@ -1,11 +1,14 @@
 from fastapi import APIRouter, status
 
-from core import AuthForm, BearerToken, User, UserRegister, login_manager
-from core.errors import (
+from core.api.errors import (
     ber,
     invalid_credentials_error,
     user_already_exists_error,
 )
+from core.api.schemas import BearerToken, UserRegister
+from core.auth import login_manager
+from core.deps import AuthForm
+from core.models import User
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

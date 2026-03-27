@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-from core import CurrentUser, UserRead
-from core.errors import ber, unauthorized_error
+from core.api.errors import ber, unauthorized_error
+from core.api.schemas import UserRead
+from core.deps import CurrentUser
 
 router = APIRouter(tags=["Me"])
 
