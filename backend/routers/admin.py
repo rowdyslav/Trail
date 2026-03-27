@@ -26,10 +26,10 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 @router.post(
-    "/auth/login",
+    "/session",
     responses=ber(invalid_credentials_error, admin_inactive_error),
 )
-async def admin_login(data: AdminLogin) -> BearerToken:
+async def create_admin_session(data: AdminLogin) -> BearerToken:
     admin = await Admin.find_one(Admin.email == data.email)
     if admin is None or not await admin.verify_password(data.password):
         raise invalid_credentials_error
@@ -41,15 +41,15 @@ async def admin_login(data: AdminLogin) -> BearerToken:
     )
 
 
-@router.post(
-    "/redemptions/{code}/validate",
+@router.get(
+    "/redemptions/{code}",
     responses=ber(
         unauthorized_error,
         redemption_code_not_found_error,
         redemption_code_not_active_error,
     ),
 )
-async def validate_redemption_code(
+async def read_redemption_code_validation(
     _: CurrentAdmin, code: str
 ) -> RedemptionValidationRead:
     redemption = await get_redemption_or_404(code)
@@ -74,8 +74,8 @@ async def validate_redemption_code(
     )
 
 
-@router.post(
-    "/redemptions/{code}/confirm",
+@router.patch(
+    "/redemptions/{code}",
     responses=ber(
         unauthorized_error,
         redemption_code_not_found_error,

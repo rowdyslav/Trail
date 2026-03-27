@@ -4,7 +4,7 @@ from core.models import Admin, User
 from env import ENV
 
 login_manager = LoginManager(ENV.auth_secret, "/auth/login")
-admin_login_manager = LoginManager(ENV.auth_secret, "/admin/auth/login")
+admin_login_manager = LoginManager(ENV.auth_secret, "/admin/session")
 
 
 @login_manager.user_loader()

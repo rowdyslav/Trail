@@ -25,7 +25,7 @@ router = APIRouter(prefix="/redemptions", tags=["Redemptions"])
 
 
 @router.post(
-    "/request",
+    "",
     responses=ber(
         unauthorized_error,
         insufficient_reward_points_error,
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/redemptions", tags=["Redemptions"])
         redemption_code_generation_error,
     ),
 )
-async def request_redemption_code(
+async def create_redemption_code(
     me: CurrentUser, data: RedemptionRequest
 ) -> RedemptionCodeRead:
     items, requested_points = await build_redemption_items(
@@ -71,8 +71,8 @@ async def read_redemption_code(me: CurrentUser, code: str) -> RedemptionCodeRead
     return redemption.to_read()
 
 
-@router.post(
-    "/{code}/cancel",
+@router.delete(
+    "/{code}",
     responses=ber(
         unauthorized_error,
         redemption_code_not_found_error,
