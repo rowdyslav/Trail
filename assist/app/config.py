@@ -5,10 +5,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-ENV_FILE = BASE_DIR / ".env"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = REPO_ROOT / "backend" / ".env"
 
-# Always load the project .env, regardless of current working directory.
+# Always load backend/.env, regardless of current working directory.
 load_dotenv(dotenv_path=ENV_FILE, override=True)
 
 

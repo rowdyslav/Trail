@@ -1,6 +1,8 @@
-import asyncio
-from typing import Optional
+from __future__ import annotations
 
+import asyncio
+
+from app.ai.common import normalize_text
 from app.ai.deepseek_client import DeepSeekClient
 from app.config import get_settings
 
@@ -17,7 +19,7 @@ def _fact_system_prompt() -> str:
     )
 
 
-def _fact_user_prompt(place_name: str, description: Optional[str] = None) -> str:
+def _fact_user_prompt(place_name: str, description: str | None = None) -> str:
     description_block = f"Краткое описание: {description.strip()}\n" if description and description.strip() else ""
     return (
         f"Название точки: {place_name.strip()}\n"
@@ -27,16 +29,16 @@ def _fact_user_prompt(place_name: str, description: Optional[str] = None) -> str
     )
 
 
-def _fallback_from_description(description: Optional[str]) -> Optional[str]:
+def _fallback_from_description(description: str | None) -> str | None:
     if not description or not description.strip():
         return None
-    return " ".join(description.split())
+    return normalize_text(description)
 
 
 async def generate_fact(
     place_name: str,
-    description: Optional[str] = None,
-    client: Optional[DeepSeekClient] = None,
+    description: str | None = None,
+    client: DeepSeekClient | None = None,
 ) -> str:
     if not place_name or not place_name.strip():
         raise ValueError("place_name is required")
@@ -61,7 +63,7 @@ async def generate_fact(
             return fallback
         raise
 
-    cleaned = " ".join(text.split())
+    cleaned = normalize_text(text)
     if not cleaned:
         if fallback:
             return fallback
@@ -71,7 +73,7 @@ async def generate_fact(
 
 def generate_fact_in_background(
     place_name: str,
-    description: Optional[str] = None,
-    client: Optional[DeepSeekClient] = None,
+    description: str | None = None,
+    client: DeepSeekClient | None = None,
 ) -> "asyncio.Task[str]":
     return asyncio.create_task(generate_fact(place_name, description, client))

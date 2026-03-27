@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from app.ai.deepseek_client import DeepSeekClient
 from app.ai.facts import generate_fact
@@ -6,8 +6,8 @@ from app.ai.facts import generate_fact
 
 async def generate_scan_success_message(
     place_name: str,
-    description: Optional[str] = None,
-    client: Optional[DeepSeekClient] = None,
+    description: str | None = None,
+    client: DeepSeekClient | None = None,
 ) -> str:
     if not place_name or not place_name.strip():
         raise ValueError("place_name is required for on_scan_success")
