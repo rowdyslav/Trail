@@ -1,7 +1,6 @@
 export type CheckpointStatus = 'locked' | 'available' | 'completed'
 export type RouteAccessType = 'free' | 'paid'
-export type RedemptionRequestStatus = 'created' | 'issued'
-export type RedemptionRequestKind = 'reward' | 'custom_amount'
+export type RedemptionRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
 
 export interface Reward {
   title: string
@@ -90,25 +89,38 @@ export interface UpgradeItem {
   locked?: boolean
 }
 
-export interface RewardOption {
+export interface PrizeCatalogItem {
   id: string
   title: string
   description: string
   pointsCost: number
+  isActive?: boolean
+  image?: string
+}
+
+export interface RedemptionDraftItem {
+  prizeId: string
+  quantity: number
+}
+
+export interface RedemptionRequestItem {
+  prizeId: string
+  titleSnapshot: string
+  pointsCostSnapshot: number
+  quantity: number
+  totalPoints: number
 }
 
 export interface RedemptionRequest {
   id: string
   code: string
   status: RedemptionRequestStatus
-  kind: RedemptionRequestKind
+  userId: string
   userName: string
   createdAt: string
-  preferredRewardId?: string
-  preferredPointsAmount?: number
-  issuedRewardId?: string
-  issuedPointsAmount?: number
-  confirmedAt?: string
+  issuedAt?: string
+  totalPoints: number
+  items: RedemptionRequestItem[]
 }
 
 export interface UserProfile {

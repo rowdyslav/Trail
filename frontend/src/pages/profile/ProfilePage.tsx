@@ -14,9 +14,11 @@ import {
 import { Link } from 'react-router-dom'
 import { profileStats, upgradeItems } from '../../entities/quest/model/mockData'
 import { useGameStore } from '../../features/game/model/useGameStore'
+import { ActiveRedemptionCard } from '../../features/redemption/ui/ActiveRedemptionCard'
 
 export function ProfilePage() {
   const user = useGameStore((state) => state.user)
+  const activeRedemption = useGameStore((state) => state.getActiveRedemptionForCurrentUser())
   const logoutUser = useGameStore((state) => state.logoutUser)
 
   return (
@@ -25,7 +27,7 @@ export function ProfilePage() {
         <div className="absolute inset-0 -z-10 scale-150 rounded-full bg-gradient-to-b from-[#b1f0ce]/30 to-transparent opacity-50 blur-3xl" />
         <div className="group relative">
           <div className="h-52 rounded-full border-4 border-black transition-transform duration-500 group-hover:scale-105 md:h-80 md:w-80">
-            <img alt="Mascot" className="h-full w-full rounded-full object-contain" src="/img/гриб1.png" />
+            <img alt="Талисман" className="h-full w-full rounded-full object-contain" src="/img/гриб1.png" />
           </div>
           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 rounded-full border-4 border-[#f9faf6] bg-[#0f5238] px-6 py-2 font-bold text-white shadow-xl">
             Уровень {user.level}
@@ -33,13 +35,14 @@ export function ProfilePage() {
         </div>
         <div className="mt-10 space-y-2 text-center">
           <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">{user.title}</h2>
-          {user.email ? <p className="text-sm text-[#5a645d]">{user.email}</p> : null}
           <div className="flex items-center justify-center gap-2 font-bold text-[#0f5238]">
             <MdLocalFireDepartment className="text-lg" />
             <span className="text-xs uppercase tracking-wide">Серия: {user.streakDays} дней</span>
           </div>
         </div>
       </section>
+
+      {activeRedemption ? <ActiveRedemptionCard request={activeRedemption} /> : null}
 
       <section className="grid gap-4 md:grid-cols-[1.2fr,0.8fr]">
         <div className="space-y-4 rounded-lg bg-[#f3f4f0] p-6">
@@ -63,20 +66,20 @@ export function ProfilePage() {
         <div className="rounded-lg bg-[#0f5238] p-6 text-white shadow-[0_16px_30px_rgba(15,82,56,0.18)]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">Reward points</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">Баллы наград</p>
               <p className="mt-3 text-4xl font-extrabold">{user.rewardPointsBalance}</p>
             </div>
             <MdStars className="text-4xl text-[#b1f0ce]" />
           </div>
           <p className="mt-4 text-sm leading-6 text-white/80">
-            Баланс очков для выдачи наград, сувениров и скидок на платные маршруты.
+            Баллы можно обменивать на призы, сувениры и скидки на платные маршруты.
           </p>
           <Link
             to="/redeem"
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-[#0f5238]"
           >
             <MdRedeem className="text-lg" />
-            Обменять очки
+            Обменять баллы
           </Link>
         </div>
       </section>

@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { MdExplore, MdMilitaryTech, MdOutlinePerson, MdOutlineQrCodeScanner } from 'react-icons/md'
+import { MdExplore, MdMap, MdMilitaryTech, MdOutlinePerson, MdOutlineQrCodeScanner } from 'react-icons/md'
 import { RewardModal } from '../../features/rewards/ui/RewardModal'
 import { useGameStore } from '../../features/game/model/useGameStore'
 import { ScanOverlay } from '../../features/scan/ui/ScanOverlay'
@@ -7,6 +7,7 @@ import { cn } from '../../shared/lib/cn'
 
 const navItems = [
   { to: '/', label: 'Главная', icon: MdExplore, match: '/' },
+  { to: '/routes', label: 'Каталог', icon: MdMap, match: '/routes' },
   { to: '/route', label: 'Маршрут', icon: MdMilitaryTech, match: '/route' },
   { to: '/profile', label: 'Профиль', icon: MdOutlinePerson, match: '/profile' },
 ]

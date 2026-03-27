@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useGameStore } from '../../features/game/model/useGameStore'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
   const adminSession = useGameStore((state) => state.adminSession)
   const loginAdmin = useGameStore((state) => state.loginAdmin)
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('trail123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (adminSession) {
     return <Navigate to="/admin/redemptions" replace />
@@ -17,20 +18,22 @@ export function AdminLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f4f6f1] px-6">
       <section className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-[0_20px_50px_rgba(15,82,56,0.12)]">
-        <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#5a645d]">Admin login</p>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#1a1c1a]">Вход для стойки выдачи</h1>
+        <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#5a645d]">Вход администратора</p>
+        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#1a1c1a]">Стойка выдачи призов</h1>
         <p className="mt-3 text-sm leading-6 text-[#404943]">
-          Для MVP используется локальный вход. Тестовые данные уже подставлены в форму.
+          Войдите под администратором, чтобы проверять и подтверждать коды выдачи через backend.
         </p>
 
         <form
           className="mt-8 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault()
-            const success = loginAdmin(username, password)
+            setIsSubmitting(true)
+            const result = await loginAdmin(email, password)
+            setIsSubmitting(false)
 
-            if (!success) {
-              setError('Неверный логин или пароль.')
+            if (!result.success) {
+              setError(result.error ?? 'Не удалось войти в админ-панель.')
               return
             }
 
@@ -38,16 +41,18 @@ export function AdminLoginPage() {
           }}
         >
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-[#404943]">Логин</span>
+            <span className="mb-2 block text-sm font-semibold text-[#404943]">Email</span>
             <input
-              value={username}
+              type="email"
+              value={email}
               onChange={(event) => {
-                setUsername(event.target.value)
+                setEmail(event.target.value)
                 setError(null)
               }}
               className="w-full rounded-[1rem] border border-[#d6ddd6] bg-[#f9faf6] px-4 py-3 outline-none focus:border-[#0f5238]"
             />
           </label>
+
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-[#404943]">Пароль</span>
             <input
@@ -65,9 +70,10 @@ export function AdminLoginPage() {
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full rounded-full bg-[#0f5238] px-5 py-3 text-sm font-bold text-white"
           >
-            Войти
+            {isSubmitting ? 'Входим...' : 'Войти'}
           </button>
         </form>
       </section>

@@ -6,6 +6,7 @@ import { ProfilePage } from '../pages/profile/ProfilePage'
 import { RoutePage } from '../pages/route/RoutePage'
 import { RoutesCatalogPage } from '../pages/catalog/RoutesCatalogPage'
 import { RedeemPage } from '../pages/redeem/RedeemPage'
+import { RedeemConfirmPage } from '../pages/redeem/RedeemConfirmPage'
 import { RedeemResultPage } from '../pages/redeem/RedeemResultPage'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminRedemptionsPage } from '../pages/admin/AdminRedemptionsPage'
@@ -29,8 +30,30 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      { path: 'redeem', element: <RedeemPage /> },
-      { path: 'redeem/:requestId', element: <RedeemResultPage /> },
+      {
+        path: 'redeem',
+        element: (
+          <RequireAuth>
+            <RedeemPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'redeem/confirm',
+        element: (
+          <RequireAuth>
+            <RedeemConfirmPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'redeem/:requestId',
+        element: (
+          <RequireAuth>
+            <RedeemResultPage />
+          </RequireAuth>
+        ),
+      },
     ],
   },
   {

@@ -12,6 +12,27 @@ interface UserRead {
   reward_points: number
 }
 
+interface RedemptionPrizeItemRead {
+  prize_id: string
+  title: string
+  points_cost: number
+  quantity: number
+}
+
+interface RedemptionCodeRead {
+  code: string
+  status: 'active' | 'used' | 'expired' | 'cancelled'
+  requested_points: number
+  created_at: string
+  used_at?: string | null
+  cancelled_at?: string | null
+  items: RedemptionPrizeItemRead[]
+}
+
+interface UserProfileRead extends UserRead {
+  active_redemptions?: RedemptionCodeRead[]
+}
+
 const createFormBody = (fields: Record<string, string>) => {
   const body = new URLSearchParams()
 
@@ -46,10 +67,10 @@ export const authApi = {
       }),
     }),
   readMe: (token: string) =>
-    apiRequest<UserRead>('/me', {
+    apiRequest<UserProfileRead>('/me', {
       method: 'GET',
       token,
     }),
 }
 
-export type { UserRead }
+export type { RedemptionCodeRead, UserProfileRead, UserRead }

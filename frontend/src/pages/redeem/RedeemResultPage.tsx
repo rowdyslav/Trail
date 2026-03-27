@@ -4,10 +4,7 @@ import { useGameStore } from '../../features/game/model/useGameStore'
 export function RedeemResultPage() {
   const { requestId = '' } = useParams()
   const request = useGameStore((state) => state.getRedemptionById(requestId))
-  const rewardOptions = useGameStore((state) => state.rewardOptions)
-  const rewardTitle = request?.preferredRewardId
-    ? rewardOptions.find((option) => option.id === request.preferredRewardId)?.title
-    : null
+  const isActive = request?.status === 'active'
 
   if (!request) {
     return <Navigate to="/redeem" replace />
@@ -26,25 +23,33 @@ export function RedeemResultPage() {
 
       <section className="grid gap-5 rounded-[2rem] bg-white p-6 shadow-[0_16px_40px_rgba(15,82,56,0.08)] sm:grid-cols-2">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Тип заявки</p>
-          <p className="mt-2 text-lg font-bold text-[#1a1c1a]">
-            {request.kind === 'reward' ? rewardTitle ?? 'Награда' : 'Произвольное списание'}
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Позиции заявки</p>
+          <div className="mt-2 space-y-2">
+            {request.items.map((item) => (
+              <p key={item.prizeId} className="text-lg font-bold text-[#1a1c1a]">
+                {item.titleSnapshot} x{item.quantity}
+              </p>
+            ))}
+          </div>
         </div>
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Подготовлено очков</p>
-          <p className="mt-2 text-lg font-bold text-[#1a1c1a]">{request.preferredPointsAmount ?? 0}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Сумма списания</p>
+          <p className="mt-2 text-lg font-bold text-[#1a1c1a]">{request.totalPoints}</p>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Статус</p>
-          <p className="mt-2 inline-flex rounded-full bg-[#edf7ee] px-3 py-1 text-sm font-bold text-[#0f5238]">
-            {request.status === 'created' ? 'Ожидает подтверждения' : 'Выдано'}
+          <p
+            className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold ${
+              isActive ? 'bg-[#edf7ee] text-[#0f5238]' : 'bg-[#eceef3] text-[#44506b]'
+            }`}
+          >
+            {isActive ? 'Ожидает подтверждения' : 'Выдано'}
           </p>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#5a645d]">Инструкция</p>
           <p className="mt-2 text-sm leading-6 text-[#404943]">
-            Сотрудник найдёт заявку по коду, выберет награду или сумму списания и подтвердит выдачу.
+            Сотрудник найдёт заявку по коду, сверит состав заказа и подтвердит выдачу на админ-экране.
           </p>
         </div>
       </section>
