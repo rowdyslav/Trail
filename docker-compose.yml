@@ -37,17 +37,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
-  # frontend:
-  #   tty: true
-  #   container_name: trail_frontend
-  #   build:
-  #     context: ./frontend
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   environment:
-  #     CHOKIDAR_USEPOLLING: true
+  frontend:
+     tty: true
+     container_name: trail_frontend
+     build:
+       context: ./frontend
+     ports:
+       - "80:80"
+     volumes:
+       - ./frontend:/app
+       - /app/node_modules
+     environment:
+       CHOKIDAR_USEPOLLING: true
 volumes:
   db_data:
