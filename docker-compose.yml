@@ -1,0 +1,53 @@
+services:
+  db:
+    image: mongo:latest
+    container_name: trail_db
+    env_file:
+      - backend/.env
+    ports:
+      - "27017:27017"
+    volumes:
+      - db_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username=admin",
+          "--password=password",
+          "--authenticationDatabase=admin",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  backend:
+    tty: true
+    container_name: trail_backend
+    build:
+      context: ./backend
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+  # frontend:
+  #   tty: true
+  #   container_name: trail_frontend
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   environment:
+  #     CHOKIDAR_USEPOLLING: true
+volumes:
+  db_data:

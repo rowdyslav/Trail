@@ -1,0 +1,32 @@
+target-version = "py313"
+
+[lint]
+ignore = [
+    "COM812",
+    "D100",
+    "D102",
+    "D103",
+    "D105",
+    "D106",
+    "D107",
+    "D400",
+    "D415",
+    "PLC0415",
+    "RUF003",
+    "S105",
+    "BLE001",
+    "EM102","RUF001",
+    "PLR2004",
+    "TRY003",
+    "INP001",
+    "RUF002",
+    "RUF012",
+    "F811",
+    "E731",
+    "ERA001",
+]
+select = ["ALL"]
+fixable = ["ALL"]
+
+[format]
+skip-magic-trailing-comma = false
