@@ -29,7 +29,7 @@ invalid_credentials_error = HTTPException(
 )
 user_already_exists_error = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
-    detail="Пользователь с таким email или username уже существует",
+    detail="Пользователь с таким email уже существует",
 )
 route_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,

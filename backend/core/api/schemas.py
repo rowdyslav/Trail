@@ -32,7 +32,6 @@ class UserRead(BaseModel):
 
     id: PydanticObjectId
     email: EmailStr
-    username: str
     streak_days: int
     streak_key: StreakKey
     reward_points: int
@@ -45,10 +44,9 @@ class BearerToken(BaseModel):
 
 
 class UserRegister(BaseModel):
-    """Данные для регистрации пользователя."""
+    """Данные для регистрации пользователя по почте."""
 
     email: EmailStr
-    username: str = Field(max_length=20)
     password: str = Field(min_length=6)
 
 
