@@ -23,7 +23,6 @@ class User(PasswordMixin, Document):
     """Пользователь приложения."""
 
     email: Annotated[EmailStr, Indexed(unique=True)]
-    username: Annotated[str, Indexed(unique=True)]
     hashed_password: str
     streak_days: int = 0
     streak_key: StreakKey = StreakKey.NOVICE
