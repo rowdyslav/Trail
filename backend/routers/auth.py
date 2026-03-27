@@ -1,11 +1,14 @@
 from fastapi import APIRouter, status
 
-from core import AuthForm, BearerToken, User, UserRegister, login_manager
-from core.errors import (
+from core.api.errors import (
     ber,
     invalid_credentials_error,
     user_already_exists_error,
 )
+from core.api.schemas import BearerToken
+from core.auth import login_manager
+from core.deps import AuthForm
+from core.models import User
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -15,17 +18,15 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
     status_code=status.HTTP_201_CREATED,
     responses=ber(user_already_exists_error),
 )
-async def register(data: UserRegister) -> BearerToken:
+async def register(data: AuthForm) -> BearerToken:
     user_existed = (
-        await User.find_one(User.email == data.email) is not None
-        or await User.find_one(User.username == data.username) is not None
+        await User.find_one(User.email == data.username) is not None
     )
     if user_existed:
         raise user_already_exists_error
 
     await User(
-        email=data.email,
-        username=data.username,
+        email=data.username,
         hashed_password=User.hash_password(data.password),
     ).insert()
 

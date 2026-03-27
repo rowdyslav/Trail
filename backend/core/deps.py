@@ -3,8 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from .auth import login_manager
-from .models import User
+from core.auth import admin_login_manager, login_manager
+from core.models import Admin, User
 
 AuthForm = Annotated[OAuth2PasswordRequestForm, Depends()]
 CurrentUser = Annotated[User, Depends(login_manager)]
+CurrentAdmin = Annotated[Admin, Depends(admin_login_manager)]

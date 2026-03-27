@@ -1,8 +1,9 @@
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 
-from core import Route, RouteRead
-from core.errors import ber, route_not_found_error
+from core.api.errors import ber, route_not_found_error
+from core.api.schemas import RouteRead
+from core.models import Route
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
 

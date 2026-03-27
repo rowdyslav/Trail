@@ -1,7 +1,16 @@
 from beanie import init_beanie
 from pymongo import AsyncMongoClient
 
-from core import Point, PointCompletionHistory, Route, User
+from core.domain.rewards import RouteType
+from core.models import (
+    Admin,
+    Point,
+    PointCompletionHistory,
+    RedemptionCode,
+    Route,
+    RouteCompletion,
+    User,
+)
 from env import ENV
 
 client = AsyncMongoClient(ENV.mongo_url, uuidRepresentation="standard")
@@ -10,9 +19,9 @@ db = client[ENV.mongo_database_name]
 DEMO_ROUTES = (
     {
         "title": "Исторический центр",
-        "description": (
-            "Короткий маршрут по главным точкам центра города."
-        ),
+        "description": "Короткий маршрут по главным точкам центра города.",
+        "route_type": RouteType.FREE,
+        "reward_points_on_completion": 0,
         "points": (
             {
                 "title": "Старая площадь",
@@ -26,9 +35,9 @@ DEMO_ROUTES = (
     },
     {
         "title": "Парковый квест",
-        "description": (
-            "Неспешный маршрут по зелёной зоне с QR-чекпоинтами."
-        ),
+        "description": "Маршрут по зеленой зоне с наградой после полного прохождения.",
+        "route_type": RouteType.PAID,
+        "reward_points_on_completion": 150,
         "points": (
             {
                 "title": "Главный вход в парк",
@@ -42,6 +51,14 @@ DEMO_ROUTES = (
     },
 )
 
+DEMO_ADMINS = (
+    {
+        "email": "admin@example.com",
+        "title": "Демо-админ",
+        "password": "admin123",
+    },
+)
+
 
 async def has_actual_demo_data() -> bool:
     routes = await Route.find({}, fetch_links=True).to_list()
@@ -51,46 +68,84 @@ async def has_actual_demo_data() -> bool:
         return False
     if len(points) != sum(len(route["points"]) for route in DEMO_ROUTES):
         return False
-    if any(not route.points for route in routes):
+    if any(len(route.points) == 0 for route in routes):
         return False
 
-    actual_qr_codes = {point.qr_code_value for point in points}
-    expected_qr_codes = {
-        point["qr_code_value"]
-        for route in DEMO_ROUTES
-        for point in route["points"]
+    actual_route_signatures = {
+        (
+            route.title,
+            route.route_type,
+            route.reward_points_on_completion,
+            tuple(point.qr_code_value for point in route.points),
+        )
+        for route in routes
     }
-    return actual_qr_codes == expected_qr_codes
+    expected_route_signatures = {
+        (
+            route["title"],
+            route["route_type"],
+            route["reward_points_on_completion"],
+            tuple(point["qr_code_value"] for point in route["points"]),
+        )
+        for route in DEMO_ROUTES
+    }
+    return actual_route_signatures == expected_route_signatures
 
 
-async def recreate_demo_data() -> None:
+async def seed_demo_routes() -> None:
+    if await has_actual_demo_data():
+        return
+
     await PointCompletionHistory.get_pymongo_collection().delete_many({})
+    await RouteCompletion.get_pymongo_collection().delete_many({})
+    await RedemptionCode.get_pymongo_collection().delete_many({})
     await Route.get_pymongo_collection().delete_many({})
     await Point.get_pymongo_collection().delete_many({})
 
     for route_data in DEMO_ROUTES:
         points = [
-            await Point(**point_data).insert()
-            for point_data in route_data["points"]
+            await Point(**point_data).insert() for point_data in route_data["points"]
         ]
-
         await Route(
             title=route_data["title"],
             description=route_data["description"],
+            route_type=route_data["route_type"],
+            reward_points_on_completion=route_data["reward_points_on_completion"],
             points=points,
         ).insert()
 
 
-async def seed_data() -> None:
-    if await has_actual_demo_data():
-        return
+async def seed_demo_admins() -> None:
+    for admin_data in DEMO_ADMINS:
+        existing_admin = await Admin.find_one(
+            Admin.email == admin_data["email"]
+        )
+        if existing_admin is not None:
+            continue
 
-    await recreate_demo_data()
+        await Admin(
+            email=admin_data["email"],
+            title=admin_data["title"],
+            hashed_password=Admin.hash_password(admin_data["password"]),
+        ).insert()
+
+
+async def seed_data() -> None:
+    await seed_demo_routes()
+    await seed_demo_admins()
 
 
 async def init_db() -> None:
     await init_beanie(
         database=db,
-        document_models=[User, Route, Point, PointCompletionHistory],
+        document_models=[
+            User,
+            Admin,
+            Route,
+            Point,
+            PointCompletionHistory,
+            RouteCompletion,
+            RedemptionCode,
+        ],
     )
     await seed_data()
