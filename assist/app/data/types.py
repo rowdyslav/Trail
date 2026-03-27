@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import TypedDict
 
 
-@dataclass(frozen=True)
-class PlaceRecord:
+class PlaceRecord(TypedDict):
     id: int
     place_name: str
     description: str
