@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+}
+
+:root {
+  font-family: var(--font-sans);
+  color: #1a1c1a;
+  background: #f9faf6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: max(884px, 100dvh);
+  background: #f9faf6;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.map-pin-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.map-pin-current,
+.map-pin-finish,
+.map-legend-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.map-pin-current,
+.map-legend-dot-current {
+  background: #0f5238;
+  border: 3px solid #d8f3dc;
+  box-shadow: 0 0 0 4px rgba(15, 82, 56, 0.18);
+  color: transparent;
+}
+
+.map-pin-finish,
+.map-legend-dot-finish {
+  background: #f4a261;
+  border: 3px solid #fff2e2;
+  box-shadow: 0 0 0 4px rgba(244, 162, 97, 0.2);
+  color: transparent;
+}
+
+@keyframes scan {
+  0% {
+    top: 20%;
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 78%;
+    opacity: 0.8;
+  }
+}
