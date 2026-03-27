@@ -4,4 +4,5 @@
 .venv
 .env
 .python-version
-.codex
+ruff.toml
+AGENTS.md

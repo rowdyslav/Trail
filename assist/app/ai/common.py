@@ -1,51 +1,41 @@
 from __future__ import annotations
 
-from typing import Final
-
 from .deepseek_client import DeepSeekClient
-from ..config import get_settings
 
 
-REACTION_STYLE_GUIDE: Final[str] = (
-    "Пиши только по-русски. Реплика должна коротко поддерживать пользователя. "
-    "Без фактов о месте, без длинных образов. "
-    "Стиль живой, уверенный, не кринжовый, не детский, максимум одно предложение."
+REACTION_STYLE_GUIDE = (
+    "Write exactly one short reaction in Russian. "
+    "Keep it warm, lively, and concise. "
+    "Do not use lists, markdown, quotes, emojis, or explanations."
 )
 
 
-def normalize_text(value: str) -> str:
-    return " ".join(value.split())
+def normalize_text(text: str) -> str:
+    return " ".join(text.split())
 
 
-def build_context_prompt(base_event: str, action_note: str, extra_context: str | None = None) -> str:
-    prompt_parts = [base_event]
+def build_context_prompt(
+    event_description: str,
+    generation_instruction: str,
+    extra_context: str | None = None,
+) -> str:
+    prompt_parts = [event_description, generation_instruction]
     if extra_context and extra_context.strip():
-        prompt_parts.append(f"Контекст: {extra_context.strip()}")
-    prompt_parts.append(action_note)
+        prompt_parts.append(f"Дополнительный контекст: {extra_context.strip()}")
     return "\n".join(prompt_parts)
 
 
-def ensure_client(client: DeepSeekClient | None = None) -> DeepSeekClient:
-    deepseek = client or DeepSeekClient()
-    if not deepseek.is_configured():
-        raise RuntimeError("DeepSeek is not configured")
-    return deepseek
-
-
 async def generate_reaction_message(
-    *,
     system_prompt: str,
     user_prompt: str,
     empty_error: str,
     client: DeepSeekClient | None = None,
 ) -> str:
-    deepseek = ensure_client(client)
-    text = await deepseek.generate_text(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        timeout=get_settings().deepseek_timeout_seconds,
-    )
-    cleaned = normalize_text(text)
-    if not cleaned:
+    deepseek_client = client or DeepSeekClient()
+    generated_text = await deepseek_client.generate_text(system_prompt, user_prompt)
+    normalized_text = normalize_text(generated_text)
+
+    if not normalized_text:
         raise ValueError(empty_error)
-    return cleaned
+
+    return normalized_text

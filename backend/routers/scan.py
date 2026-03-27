@@ -4,39 +4,39 @@ from beanie import PydanticObjectId
 from fastapi import APIRouter
 from pymongo.errors import DuplicateKeyError
 
-from core.api.errors import ber, point_not_found_error, unauthorized_error
+from core.api.errors import ber, place_not_found_error, unauthorized_error
 from core.api.schemas import ScanRequest, ScanResponse
 from core.deps import CurrentUser
 from core.domain.rewards import RouteType
 from core.domain.streaks import calculate_streak_days
-from core.models import Point, PointCompletionHistory, Route, RouteCompletion
+from core.models import Place, PlaceCompletionHistory, Route, RouteCompletion
 
 router = APIRouter(tags=["Scan"])
 
 
-async def find_route_by_point(point_id: PydanticObjectId) -> Route | None:
+async def find_route_by_place(place_id: PydanticObjectId) -> Route | None:
     routes = await Route.find({}, fetch_links=True).to_list()
-    return next((route for route in routes if route.has_point(point_id)), None)
+    return next((route for route in routes if route.has_place(place_id)), None)
 
 
 @router.post(
     "/scan",
-    responses=ber(unauthorized_error, point_not_found_error),
+    responses=ber(unauthorized_error, place_not_found_error),
 )
 async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
-    point = await Point.find_one(Point.qr_code_value == data.qr_code_value)
-    if point is None:
-        raise point_not_found_error
+    place = await Place.find_one(Place.qr_code_value == data.qr_code_value)
+    if place is None:
+        raise place_not_found_error
 
-    route = await find_route_by_point(point.id)
+    route = await find_route_by_place(place.id)
     if route is None:
-        raise point_not_found_error
+        raise place_not_found_error
 
-    point_read = point.to_read()
+    place_read = place.to_read()
 
-    completion = await PointCompletionHistory.find_one(
-        PointCompletionHistory.user_id == me.id,
-        PointCompletionHistory.point_id == point.id,
+    completion = await PlaceCompletionHistory.find_one(
+        PlaceCompletionHistory.user_id == me.id,
+        PlaceCompletionHistory.place_id == place.id,
     )
     if completion is not None:
         route_completed = (
@@ -54,7 +54,7 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             reward_granted=False,
             reward_points_granted=0,
             user=me.to_read(),
-            point=point_read,
+            place=place_read,
             completed_at=completion.completed_at,
         )
 
@@ -66,15 +66,15 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     )
 
     try:
-        await PointCompletionHistory(
+        await PlaceCompletionHistory(
             user_id=me.id,
-            point_id=point.id,
+            place_id=place.id,
             completed_at=completed_at,
         ).insert()
     except DuplicateKeyError:
-        completion = await PointCompletionHistory.find_one(
-            PointCompletionHistory.user_id == me.id,
-            PointCompletionHistory.point_id == point.id,
+        completion = await PlaceCompletionHistory.find_one(
+            PlaceCompletionHistory.user_id == me.id,
+            PlaceCompletionHistory.place_id == place.id,
         )
         route_completed = (
             await RouteCompletion.find_one(
@@ -91,7 +91,7 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             reward_granted=False,
             reward_points_granted=0,
             user=me.to_read(),
-            point=point_read,
+            place=place_read,
             completed_at=None if completion is None else completion.completed_at,
         )
 
@@ -99,17 +99,17 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     me.sync_streak_key()
     me.last_completed_at = completed_at
 
-    route_point_ids = [route_point.id for route_point in route.points]
-    scanned_point_ids = {
-        completion.point_id
-        for completion in await PointCompletionHistory.find(
+    route_place_ids = [route_place.id for route_place in route.places]
+    scanned_place_ids = {
+        completion.place_id
+        for completion in await PlaceCompletionHistory.find(
             {
                 "user_id": me.id,
-                "point_id": {"$in": route_point_ids},
+                "place_id": {"$in": route_place_ids},
             }
         ).to_list()
     }
-    route_completed = len(scanned_point_ids) == len(route.points)
+    route_completed = len(scanned_place_ids) == len(route.places)
     reward_granted = False
     reward_points_granted = 0
 
@@ -143,6 +143,6 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
         reward_granted=reward_granted,
         reward_points_granted=reward_points_granted,
         user=me.to_read(),
-        point=point_read,
+        place=place_read,
         completed_at=completed_at,
     )
