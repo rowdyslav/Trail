@@ -4,10 +4,10 @@ from pymongo import AsyncMongoClient
 from core.domain.rewards import RouteType
 from core.models import (
     Admin,
+    Code,
     Payment,
     Place,
     Prize,
-    RedemptionCode,
     Route,
     User,
     Walk,
@@ -240,7 +240,7 @@ async def reset_gameplay_data() -> None:
     await WalkScans.get_pymongo_collection().delete_many({})
     await Walk.get_pymongo_collection().delete_many({})
     await Payment.get_pymongo_collection().delete_many({})
-    await RedemptionCode.get_pymongo_collection().delete_many({})
+    await Code.get_pymongo_collection().delete_many({})
     await Route.get_pymongo_collection().delete_many({})
     await Place.get_pymongo_collection().delete_many({})
     await User.get_pymongo_collection().update_many(
@@ -261,7 +261,7 @@ async def init_db() -> None:
             WalkScans,
             Walk,
             Payment,
-            RedemptionCode,
+            Code,
         ],
     )
     await seed_data()

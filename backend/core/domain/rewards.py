@@ -1,4 +1,3 @@
-from datetime import timedelta
 from enum import StrEnum
 from secrets import choice
 
@@ -10,7 +9,7 @@ class RouteType(StrEnum):
     PAID = "paid"
 
 
-class RedemptionCodeStatus(StrEnum):
+class CodeStatus(StrEnum):
     """Статусы кода на выдачу награды."""
 
     ACTIVE = "active"
@@ -19,10 +18,9 @@ class RedemptionCodeStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
-REDEMPTION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-REDEMPTION_CODE_LENGTH = 6
-REDEMPTION_CODE_TTL = timedelta(minutes=20)
+CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+CODE_LENGTH = 6
 
 
-def generate_redemption_code(length: int = REDEMPTION_CODE_LENGTH) -> str:
-    return "".join(choice(REDEMPTION_CODE_ALPHABET) for _ in range(length))
+def generate_code(length: int = CODE_LENGTH) -> str:
+    return "".join(choice(CODE_ALPHABET) for _ in range(length))

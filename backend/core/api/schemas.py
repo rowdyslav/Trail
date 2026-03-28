@@ -3,8 +3,8 @@ from datetime import datetime
 from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
-from core.domain.rewards import RedemptionCodeStatus, RouteType
-from core.domain.shared import RedemptionPrizeItem
+from core.domain.rewards import CodeStatus, RouteType
+from core.domain.shared import CodePrizeItem
 from core.domain.streaks import StreakKey
 
 
@@ -119,23 +119,23 @@ class ScanAIRead(BaseModel):
     fallback: bool
 
 
-class RedemptionPrizeSelection(BaseModel):
+class CodePrizeSelection(BaseModel):
     prize_id: PydanticObjectId
     quantity: int = Field(gt=0)
 
 
-class RedemptionRequest(BaseModel):
-    items: list[RedemptionPrizeSelection] = Field(min_length=1)
+class CodeRequest(BaseModel):
+    items: list[CodePrizeSelection] = Field(min_length=1)
 
 
-class RedemptionCodeRead(BaseModel):
+class CodeRead(BaseModel):
     code: str
-    status: RedemptionCodeStatus
+    status: CodeStatus
     requested_points: int
     created_at: datetime
     used_at: datetime | None = None
     cancelled_at: datetime | None = None
-    items: list[RedemptionPrizeItem]
+    items: list[CodePrizeItem]
 
 
 class PaymentRead(BaseModel):
@@ -150,7 +150,7 @@ class PaymentRead(BaseModel):
 
 
 class UserProfileRead(UserRead):
-    active_redemptions: list[RedemptionCodeRead] = Field(default_factory=list)
+    active_codes: list[CodeRead] = Field(default_factory=list)
     payments: list[PaymentRead] = Field(default_factory=list)
 
 
@@ -163,20 +163,20 @@ class RouteSelectionRead(BaseModel):
     is_active: bool
 
 
-class RedemptionValidationRead(BaseModel):
+class CodeValidationRead(BaseModel):
     code: str
-    status: RedemptionCodeStatus
+    status: CodeStatus
     requested_points: int
     created_at: datetime
     user: UserRead
-    items: list[RedemptionPrizeItem]
+    items: list[CodePrizeItem]
     can_confirm: bool
 
 
-class RedemptionConfirmRead(BaseModel):
+class CodeConfirmRead(BaseModel):
     code: str
-    status: RedemptionCodeStatus
+    status: CodeStatus
     used_at: datetime
     deducted_points: int
     user: UserRead
-    items: list[RedemptionPrizeItem]
+    items: list[CodePrizeItem]

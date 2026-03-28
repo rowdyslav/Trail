@@ -44,21 +44,21 @@ prize_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Prize not found or inactive",
 )
-redemption_code_not_found_error = HTTPException(
+code_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
-    detail="Redemption code not found",
+    detail="Code not found",
 )
-redemption_code_not_active_error = HTTPException(
+code_not_active_error = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
-    detail="Redemption code is not active",
+    detail="Code is not active",
 )
-redemption_code_expired_error = HTTPException(
+code_expired_error = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
-    detail="Redemption code is expired",
+    detail="Code is expired",
 )
-redemption_code_generation_error = HTTPException(
+code_generation_error = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    detail="Could not generate redemption code",
+    detail="Could not generate code",
 )
 insufficient_reward_points_error = HTTPException(
     status_code=status.HTTP_409_CONFLICT,

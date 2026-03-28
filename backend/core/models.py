@@ -8,16 +8,16 @@ from pydantic import EmailStr, Field, model_validator
 from pymongo import IndexModel
 
 from .api.schemas import (
+    CodeRead,
     PaymentRead,
     PlaceRead,
     PrizeRead,
-    RedemptionCodeRead,
     RouteRead,
     UserProfileRead,
     UserRead,
 )
-from .domain.rewards import RedemptionCodeStatus, RouteType, generate_redemption_code
-from .domain.shared import PasswordMixin, RedemptionPrizeItem
+from .domain.rewards import CodeStatus, RouteType, generate_code
+from .domain.shared import CodePrizeItem, PasswordMixin
 from .domain.streaks import StreakKey, calculate_streak_key
 
 
@@ -44,12 +44,12 @@ class User(PasswordMixin, Document):
     def to_profile_read(
         self,
         *,
-        active_redemptions: list[RedemptionCodeRead],
+        active_codes: list[CodeRead],
         payments: list[PaymentRead],
     ) -> UserProfileRead:
         return UserProfileRead(
             **self.model_dump(),
-            active_redemptions=active_redemptions,
+            active_codes=active_codes,
             payments=payments,
         )
 
@@ -198,27 +198,27 @@ class Payment(Document):
         )
 
 
-class RedemptionCode(Document):
+class Code(Document):
     user_id: PydanticObjectId
-    code: Annotated[str, Indexed(unique=True)] = Field(
-        default_factory=generate_redemption_code
+    value: Annotated[str, Indexed(unique=True)] = Field(
+        default_factory=generate_code
     )
-    status: RedemptionCodeStatus = RedemptionCodeStatus.ACTIVE
+    status: CodeStatus = CodeStatus.ACTIVE
     requested_points: int = Field(gt=0)
-    items: list[RedemptionPrizeItem] = Field(default_factory=list)
+    items: list[CodePrizeItem] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     used_at: datetime | None = None
     cancelled_at: datetime | None = None
 
     class Settings:
-        name = "redemption_codes"
+        name = "codes"
         indexes = [
             IndexModel([("user_id", 1), ("status", 1)]),
         ]
 
-    def to_read(self) -> RedemptionCodeRead:
-        return RedemptionCodeRead(
-            code=self.code,
+    def to_read(self) -> CodeRead:
+        return CodeRead(
+            code=self.value,
             status=self.status,
             requested_points=self.requested_points,
             created_at=self.created_at,

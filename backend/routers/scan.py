@@ -52,9 +52,9 @@ def build_ai_fallback(place_title: str, route_title: str) -> str:
 
 
 async def generate_scan_ai_fact(place_title: str, route_title: str) -> tuple[str, bool]:
-    assistant = DeepSeekService()
+    ai = DeepSeekService()
     try:
-        fact = await assistant.generate_scan_success_message(
+        fact = await ai.generate_scan_success_message(
             place_name=place_title,
             description=f"Route point: {route_title}",
         )

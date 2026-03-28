@@ -22,8 +22,8 @@ class PasswordMixin:
         return valid
 
 
-class RedemptionPrizeItem(BaseModel):
-    """Snapshot of a selected prize inside a redemption code."""
+class CodePrizeItem(BaseModel):
+    """Snapshot of a selected prize inside a code."""
 
     prize_id: PydanticObjectId
     title: str

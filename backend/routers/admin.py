@@ -5,21 +5,21 @@ from fastapi import APIRouter
 from core.api.errors import (
     admin_inactive_error,
     ber,
+    code_not_active_error,
+    code_not_found_error,
     invalid_credentials_error,
-    redemption_code_not_active_error,
-    redemption_code_not_found_error,
     unauthorized_error,
 )
 from core.api.schemas import (
     AdminLogin,
     BearerToken,
-    RedemptionConfirmRead,
-    RedemptionValidationRead,
+    CodeConfirmRead,
+    CodeValidationRead,
 )
 from core.auth import admin_login_manager
 from core.deps import CurrentAdmin
-from core.domain.redemptions import get_redemption_or_404
-from core.domain.rewards import RedemptionCodeStatus
+from core.domain.codes import get_code_or_404
+from core.domain.rewards import CodeStatus
 from core.models import Admin, User
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -42,63 +42,61 @@ async def create_admin_session(data: AdminLogin) -> BearerToken:
 
 
 @router.get(
-    "/redemptions/{code}",
+    "/codes/{code}",
     responses=ber(
         unauthorized_error,
-        redemption_code_not_found_error,
-        redemption_code_not_active_error,
+        code_not_found_error,
+        code_not_active_error,
     ),
 )
-async def read_redemption_code_validation(
-    _: CurrentAdmin, code: str
-) -> RedemptionValidationRead:
-    redemption = await get_redemption_or_404(code)
+async def read_code_validation(_: CurrentAdmin, code: str) -> CodeValidationRead:
+    entry = await get_code_or_404(code)
 
-    if redemption.status != RedemptionCodeStatus.ACTIVE:
-        raise redemption_code_not_active_error
+    if entry.status != CodeStatus.ACTIVE:
+        raise code_not_active_error
 
-    user = await User.get(redemption.user_id)
+    user = await User.get(entry.user_id)
     if user is None:
-        raise redemption_code_not_found_error
+        raise code_not_found_error
 
-    return RedemptionValidationRead(
-        code=redemption.code,
-        status=redemption.status,
-        requested_points=redemption.requested_points,
-        created_at=redemption.created_at,
+    return CodeValidationRead(
+        code=entry.value,
+        status=entry.status,
+        requested_points=entry.requested_points,
+        created_at=entry.created_at,
         user=user.to_read(),
-        items=redemption.items,
+        items=entry.items,
         can_confirm=True,
     )
 
 
 @router.patch(
-    "/redemptions/{code}",
+    "/codes/{code}",
     responses=ber(
         unauthorized_error,
-        redemption_code_not_found_error,
-        redemption_code_not_active_error,
+        code_not_found_error,
+        code_not_active_error,
     ),
 )
-async def confirm_redemption_code(_: CurrentAdmin, code: str) -> RedemptionConfirmRead:
-    redemption = await get_redemption_or_404(code)
+async def confirm_code(_: CurrentAdmin, code: str) -> CodeConfirmRead:
+    entry = await get_code_or_404(code)
 
-    if redemption.status != RedemptionCodeStatus.ACTIVE:
-        raise redemption_code_not_active_error
+    if entry.status != CodeStatus.ACTIVE:
+        raise code_not_active_error
 
-    user = await User.get(redemption.user_id)
+    user = await User.get(entry.user_id)
     if user is None:
-        raise redemption_code_not_found_error
+        raise code_not_found_error
 
-    redemption.status = RedemptionCodeStatus.USED
-    redemption.used_at = redemption.used_at or datetime.now(UTC)
-    await redemption.save()
+    entry.status = CodeStatus.USED
+    entry.used_at = entry.used_at or datetime.now(UTC)
+    await entry.save()
 
-    return RedemptionConfirmRead(
-        code=redemption.code,
-        status=redemption.status,
-        used_at=redemption.used_at,
-        deducted_points=redemption.requested_points,
+    return CodeConfirmRead(
+        code=entry.value,
+        status=entry.status,
+        used_at=entry.used_at,
+        deducted_points=entry.requested_points,
         user=user.to_read(),
-        items=redemption.items,
+        items=entry.items,
     )
