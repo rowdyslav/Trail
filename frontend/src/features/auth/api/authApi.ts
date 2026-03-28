@@ -1,4 +1,5 @@
 import { apiRequest } from '../../../shared/api/http'
+import type { PaymentRead } from '../../navigation/api/routesApi'
 
 interface BearerToken {
   access_token: string
@@ -10,6 +11,8 @@ interface UserRead {
   streak_days: number
   streak_key: 'novice' | 'explorer' | 'traveler' | 'pathfinder' | 'legend'
   reward_points: number
+  active_route_id?: string | null
+  purchased_route_ids?: string[]
 }
 
 interface RedemptionPrizeItemRead {
@@ -31,6 +34,7 @@ interface RedemptionCodeRead {
 
 interface UserProfileRead extends UserRead {
   active_redemptions?: RedemptionCodeRead[]
+  payments?: PaymentRead[]
 }
 
 const createFormBody = (fields: Record<string, string>) => {
@@ -73,4 +77,4 @@ export const authApi = {
     }),
 }
 
-export type { RedemptionCodeRead, UserProfileRead, UserRead }
+export type { PaymentRead, RedemptionCodeRead, UserProfileRead, UserRead }

@@ -83,16 +83,16 @@
 
 `useRouteProgressStore` отвечает за:
 - публичную загрузку каталога через `/routes`;
-- гидрацию viewer state через `/routes/viewer-states` и `/routes/{route_id}/viewer-state`, если у пользователя есть `authToken`;
+- использование встроенных viewer-state полей из `/routes` и `/routes/{route_id}`, если backend вернул их для текущего пользователя;
 - preview маршрута без авторизации;
 - выбор активного маршрута;
-- покупку маршрута, подтверждение покупки и автоматический выбор маршрута после успешного confirm.
+- оплату маршрута, подтверждение оплаты и автоматический выбор маршрута после успешного confirm.
 
 Важно: store больше не валидирует QR-коды локально, не управляет scanner UI и не хранит отдельный статический конфиг точек маршрута.
 
 #### `features/navigation`
 
-- `api/routesApi.ts` — клиент для публичных route endpoints и auth-only viewer state / select / purchase endpoints, плюс маппинг backend `places` в `RouteDetails`, `RoutePoint`, `CatalogRoute`.
+- `api/routesApi.ts` — клиент для публичных route endpoints и auth-only select / payment endpoints, плюс маппинг backend `places` в `RouteDetails`, `RoutePoint`, `CatalogRoute`.
 - `RouteDetails` хранит не только точки и прогресс, но и purchase/viewer состояние для полноценного preview/active экрана маршрута.
 - `ui/RouteMap.tsx` — карта маршрута на `react-leaflet`.
 
@@ -182,11 +182,9 @@ Backend используется для следующих сценариев:
 - `POST /admin/session`
 - `GET /routes`
 - `GET /routes/{route_id}`
-- `GET /routes/viewer-states`
-- `GET /routes/{route_id}/viewer-state`
 - `POST /routes/{route_id}/select`
-- `POST /routes/{route_id}/purchase`
-- `POST /routes/{route_id}/purchase/confirm`
+- `POST /routes/{route_id}/payments`
+- `POST /routes/{route_id}/payments/confirm`
 - `GET /prizes`
 - `POST /redemptions`
 - `GET /redemptions/{code}`
@@ -258,19 +256,19 @@ Backend используется для следующих сценариев:
 4. Если пользователь авторизован, `useActivatePoint` вызывает `scanApi.activate`.
 5. Backend валидирует токен и применяет бизнес-логику.
 6. Frontend показывает одно из состояний: `loading`, `success`, `duplicate`, `invalid`, `unauthorized`, `error`.
-7. При успехе `useAuthStore` синхронизирует streak и reward points пользователя из backend-ответа.
+7. При успехе `useAuthStore` синхронизирует streak, avatar state и reward points пользователя из backend-ответа `/scan`.
 
 ### 2. Каталог маршрутов, preview, выбор и покупка
 
 1. Пользователь открывает `/routes`.
 2. `CatalogPage` вызывает `loadCatalogRoutes` из `useRouteProgressStore`.
 3. Store получает публичные маршруты через `GET /routes`.
-4. Если у пользователя есть `authToken`, store дополнительно читает `/routes/viewer-states` и подмешивает `is_purchased`, `is_active`, `is_completed`, `scanned_places_count`.
+4. Если backend отдал персонализированные поля маршрута (`is_purchased`, `is_available`, `is_active`, `is_completed`, `scanned_places_count`), store использует их как источник истины.
 5. Пользователь может открыть preview маршрута без авторизации через `previewRoute` и перейти на `/route`.
 6. Авторизованный пользователь может выбрать доступный маршрут через `POST /routes/{route_id}/select`.
-7. Для платного маршрута запускается `POST /routes/{route_id}/purchase`; если backend вернул `confirmation_url`, пользователь уходит на оплату.
+7. Для платного маршрута запускается `POST /routes/{route_id}/payments`; если backend вернул `confirmation_url`, пользователь уходит на оплату.
 8. После возврата на `/routes?purchase_route_id=...` или `/route?purchase_route_id=...` фронтенд вызывает `confirmRoutePurchase`.
-9. Store подтверждает покупку через `/purchase/confirm`, затем сразу вызывает `/select`, повторно синхронизирует каталог и конкретный маршрут.
+9. Store подтверждает оплату через `/payments/confirm`, затем сразу вызывает `/select`, повторно синхронизирует каталог и конкретный маршрут.
 10. Пользователь попадает на `/route` уже с активным и доступным маршрутом.
 
 ### 3. Пользовательская авторизация
@@ -279,7 +277,7 @@ Backend используется для следующих сценариев:
 2. Страница вызывает `loginUser` или `registerUser` из `useAuthStore`.
 3. Store обращается к `authApi`.
 4. Access token сохраняется в `localStorage`.
-5. После ответа auth flow гидратирует профиль и зависимые пользовательские данные, включая viewer state маршрутов и redemption.
+5. После ответа auth flow гидратирует профиль и зависимые пользовательские данные, включая встроенные route-state поля и redemption.
 6. Защищённые страницы становятся доступны через `RequireAuth`.
 
 ### 4. Пользовательский redemption flow
@@ -329,6 +327,6 @@ Backend используется для следующих сценариев:
 - отказ от in-app scanner UI в пользу одного backend-driven activation route;
 - перевод каталога и preview маршрутов на публичные backend endpoints;
 - перевод точек карты на backend-driven `places` без статического route config;
-- отделение публичных route-данных от auth-only viewer state.
+- перенос viewer state маршрута в сами `RouteRead` и переход purchase-flow на `payments`.
 
 Любые новые изменения должны поддерживать этот подход, а не возвращать проект к camera-overlay, локальной валидации QR или второму источнику истины для маршрутов.

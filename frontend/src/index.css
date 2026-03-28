@@ -102,6 +102,18 @@ a {
   color: transparent;
 }
 
+.route-map-shell .leaflet-container,
+.route-map-shell .leaflet-pane,
+.route-map-shell .leaflet-control,
+.route-map-shell .leaflet-top,
+.route-map-shell .leaflet-bottom {
+  z-index: 0;
+}
+
+.route-map-shell .leaflet-popup {
+  z-index: 1;
+}
+
 @keyframes scan {
   0% {
     top: 20%;

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError } from '../../../shared/api/http'
 import { scanApi, type ScanActivationResponse } from '../api/scanApi'
 
@@ -12,10 +12,24 @@ interface ActivationResult {
 
 const DEFAULT_ERROR = 'Не удалось активировать точку. Попробуйте ещё раз.'
 
+const resolveActivationState = (status: string) => {
+  const normalizedStatus = status.toLowerCase()
+
+  if (
+    normalizedStatus.includes('already') ||
+    normalizedStatus.includes('duplicate') ||
+    normalizedStatus.includes('repeat')
+  ) {
+    return 'duplicate' as const
+  }
+
+  return 'success' as const
+}
+
 const mapApiError = (error: unknown): Pick<ActivationResult, 'state' | 'error'> => {
   if (error instanceof ApiError) {
     if (error.status === 404 || error.status === 422) {
-      return { state: 'error', error: error.message || 'Токен точки не найден или уже недействителен.' }
+      return { state: 'error', error: error.message || 'Точка не найдена или ссылка недействительна.' }
     }
 
     return { state: 'error', error: error.message || DEFAULT_ERROR }
@@ -53,7 +67,7 @@ export function useActivatePoint({ token, authToken, enabled }: { token: string;
         }
 
         setResult({
-          state: response.already_scanned ? 'duplicate' : 'success',
+          state: resolveActivationState(response.status),
           data: response,
           error: null,
         })

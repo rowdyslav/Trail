@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -182,7 +181,7 @@ export function RouteMap() {
   const openStreetMapLink = useMemo(() => getRouteLink(routingWaypoints), [routingWaypoints])
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-[#bfc9c1]/20 bg-white shadow-[0_20px_50px_rgba(15,82,56,0.08)]">
+    <section className="route-map-shell relative z-0 overflow-hidden rounded-[28px] border border-[#bfc9c1]/20 bg-white shadow-[0_20px_50px_rgba(15,82,56,0.08)]">
       <div className="flex flex-col gap-4 border-b border-[#edeeea] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#0f5238]">Навигация</p>
@@ -210,7 +209,7 @@ export function RouteMap() {
         </div>
       </div>
 
-      <div className="h-[360px] w-full bg-[#e7efe9]">
+      <div className="relative z-0 h-[360px] w-full bg-[#e7efe9]">
         {isRouteLoading ? (
           <div className="flex h-full w-full flex-col justify-end bg-[radial-gradient(circle_at_top,#eef8ef,transparent_55%),linear-gradient(180deg,#eef5ef_0%,#dfe9e1_100%)] p-6">
             <div className="mb-14 flex justify-center">
@@ -257,23 +256,20 @@ export function RouteMap() {
                     <div className="space-y-2">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5a645d]">
-                          {isLastPoint ? 'Финиш маршрута' : isFirstPoint ? 'Стартовая QR-точка' : 'QR-точка'}
+                          {isLastPoint ? 'Финиш маршрута' : isFirstPoint ? 'Стартовая точка' : 'Точка маршрута'}
                         </p>
                         <h3 className="mt-1 text-sm font-bold text-[#1a1c1a]">{routePoint.title}</h3>
                         <p className="mt-1 text-xs text-[#404943]">{routePoint.subtitle}</p>
                       </div>
-                      {!isLastPoint && routePoint.activationToken ? (
-                        <Link
-                          to={`/activate/${routePoint.activationToken}`}
-                          className="inline-flex w-full items-center justify-center rounded-full bg-[#0f5238] px-3 py-1.5 text-xs font-semibold text-white"
-                        >
-                          Открыть активацию
-                        </Link>
-                      ) : isLastPoint ? (
+                      {isLastPoint ? (
                         <div className="rounded-2xl bg-[#f3f4f0] px-3 py-2 text-xs text-[#404943]">
                           Эта точка завершает маршрут.
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="rounded-2xl bg-[#f3f4f0] px-3 py-2 text-xs text-[#404943]">
+                          Для активации этой точки откройте физический QR-код на локации.
+                        </div>
+                      )}
                     </div>
                   </Popup>
                 </Marker>
@@ -301,7 +297,7 @@ export function RouteMap() {
           <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1a1c1a] shadow-sm">
             <span className="inline-flex items-center gap-2">
               <span className="map-legend-dot map-legend-dot-qr" />
-              QR-точки
+              Точки
             </span>
           </div>
           {finishPoint ? (

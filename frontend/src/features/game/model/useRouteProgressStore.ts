@@ -2,10 +2,13 @@ import { create } from 'zustand'
 import { catalogRoutes, mockRoute } from '../../../entities/quest/model/mockData'
 import type { CatalogRoute, RouteAccessType, RouteDetails } from '../../../shared/types/game'
 import { useAuthStore } from '../../auth/model/useAuthStore'
-import { routesApi, type RouteViewerStateRead, type RouteWithViewerState } from '../../navigation/api/routesApi'
+import { routesApi, type RouteRead } from '../../navigation/api/routesApi'
 
 interface RouteProgressState {
   route: RouteDetails
+  hasRouteSelection: boolean
+  selectedRouteId: string | null
+  previewRouteId: string | null
   catalogRoutes: CatalogRoute[]
   isCatalogLoading: boolean
   isRouteActionLoading: boolean
@@ -13,6 +16,8 @@ interface RouteProgressState {
   routeActionError: string | null
   activeRouteTypeFilter: RouteAccessType | null
   clearRouteActionError: () => void
+  clearPreviewRoute: () => Promise<{ success: boolean; error?: string }>
+  resetRouteState: () => void
   loadCatalogRoutes: (routeType?: RouteAccessType | null) => Promise<void>
   selectRoute: (routeId: string) => Promise<{ success: boolean; error?: string }>
   previewRoute: (routeId: string) => Promise<{ success: boolean; error?: string }>
@@ -36,79 +41,61 @@ const fallbackRoute: RouteDetails = {
   ),
 }
 
-const getPreferredRoute = (routes: RouteWithViewerState[], preferredRouteId?: string | null) => {
-  if (!routes.length) {
-    return null
-  }
+const getRouteById = (routes: RouteRead[], routeId?: string | null) =>
+  routeId ? routes.find((routeItem) => routeItem.id === routeId) ?? null : null
 
-  return (
-    routes.find((routeItem) => routeItem.is_active) ??
-    (preferredRouteId ? routes.find((routeItem) => routeItem.id === preferredRouteId) : null) ??
-    routes[0]
-  )
+const getCurrentActiveRoute = (routes: RouteRead[]) => routes.find((routeItem) => Boolean(routeItem.is_active)) ?? null
+
+const readRoutes = async (routeType?: RouteAccessType | null) => {
+  const token = useAuthStore.getState().authToken
+  return routesApi.list(routeType, token)
 }
 
-const getSyncedRouteState = (routes: RouteWithViewerState[], preferredRouteId?: string | null) => ({
-  route: routesApi.toRouteDetails(getPreferredRoute(routes, preferredRouteId)) ?? fallbackRoute,
-})
+const readRoute = async (routeId: string) => {
+  const token = useAuthStore.getState().authToken
+  return routesApi.read(routeId, token)
+}
 
-const getSyncedCatalogAndRouteState = async (preferredRouteId?: string | null) => {
+const getResolvedRoute = (
+  routes: RouteRead[],
+  previewRouteId?: string | null,
+  selectedRouteId?: string | null,
+  explicitRoute?: RouteRead | null,
+) => {
+  if (explicitRoute) {
+    return explicitRoute
+  }
+
+  return getRouteById(routes, previewRouteId) ?? getRouteById(routes, selectedRouteId) ?? getCurrentActiveRoute(routes) ?? null
+}
+
+const getSyncedCatalogAndRouteState = async (
+  previewRouteId?: string | null,
+  selectedRouteId?: string | null,
+  explicitRouteId?: string | null,
+) => {
   const activeRouteTypeFilter = useRouteProgressStore.getState().activeRouteTypeFilter
-  const routesPromise = readRoutesWithViewerStates(activeRouteTypeFilter)
-  const routePromise = preferredRouteId
-    ? readRouteWithViewerState(preferredRouteId).catch(() => null)
-    : Promise.resolve(null)
+  const routesPromise = readRoutes(activeRouteTypeFilter)
+  const routePromise = explicitRouteId ? readRoute(explicitRouteId).catch(() => null) : Promise.resolve(null)
 
   const [routes, explicitRoute] = await Promise.all([routesPromise, routePromise])
+  const activeRoute = explicitRoute?.is_active ? explicitRoute : getCurrentActiveRoute(routes)
+  const nextSelectedRouteId = activeRoute?.id ?? selectedRouteId ?? null
+  const resolvedRoute = getResolvedRoute(routes, previewRouteId, nextSelectedRouteId, explicitRoute)
 
   return {
     catalogRoutes: routesApi.toCatalogRoutes(routes),
-    route: routesApi.toRouteDetails(explicitRoute ?? getPreferredRoute(routes, preferredRouteId)) ?? fallbackRoute,
+    route: routesApi.toRouteDetails(resolvedRoute) ?? fallbackRoute,
+    selectedRouteId: nextSelectedRouteId,
+    hasRouteSelection: Boolean(nextSelectedRouteId),
   }
-}
-
-const readViewerStatesSafely = async (token: string | null) => {
-  if (!token) {
-    return [] satisfies RouteViewerStateRead[]
-  }
-
-  try {
-    return await routesApi.listViewerStates(token)
-  } catch {
-    return [] satisfies RouteViewerStateRead[]
-  }
-}
-
-const readViewerStateSafely = async (routeId: string, token: string | null) => {
-  if (!token) {
-    return undefined
-  }
-
-  try {
-    return await routesApi.readViewerState(routeId, token)
-  } catch {
-    return undefined
-  }
-}
-
-const readRoutesWithViewerStates = async (routeType?: RouteAccessType | null) => {
-  const token = useAuthStore.getState().authToken
-  const routes = await routesApi.list(routeType)
-  const viewerStates = await readViewerStatesSafely(token)
-
-  return routesApi.withViewerStates(routes, viewerStates)
-}
-
-const readRouteWithViewerState = async (routeId: string) => {
-  const token = useAuthStore.getState().authToken
-  const route = await routesApi.read(routeId)
-  const viewerState = await readViewerStateSafely(routeId, token)
-
-  return routesApi.withViewerState(route, viewerState)
 }
 
 export const useRouteProgressStore = create<RouteProgressState>(() => ({
   route: fallbackRoute,
+  hasRouteSelection: false,
+  selectedRouteId: null,
+  previewRouteId: null,
   catalogRoutes,
   isCatalogLoading: false,
   isRouteActionLoading: false,
@@ -118,6 +105,57 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
   clearRouteActionError: () => {
     useRouteProgressStore.setState({ routeActionError: null })
   },
+  clearPreviewRoute: async () => {
+    const { selectedRouteId } = useRouteProgressStore.getState()
+
+    useRouteProgressStore.setState({
+      isRouteActionLoading: true,
+      routeActionError: null,
+    })
+
+    if (!selectedRouteId) {
+      useRouteProgressStore.setState({
+        previewRouteId: null,
+        route: fallbackRoute,
+        isRouteActionLoading: false,
+      })
+
+      return { success: true }
+    }
+
+    try {
+      useRouteProgressStore.setState({
+        ...(await getSyncedCatalogAndRouteState(null, selectedRouteId, selectedRouteId)),
+        previewRouteId: null,
+        isRouteActionLoading: false,
+      })
+
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Не удалось открыть выбранный маршрут.'
+
+      useRouteProgressStore.setState({
+        isRouteActionLoading: false,
+        routeActionError: message,
+      })
+
+      return {
+        success: false,
+        error: message,
+      }
+    }
+  },
+  resetRouteState: () => {
+    useRouteProgressStore.setState({
+      route: fallbackRoute,
+      hasRouteSelection: false,
+      selectedRouteId: null,
+      previewRouteId: null,
+      isRouteActionLoading: false,
+      routeActionError: null,
+      activeRouteTypeFilter: null,
+    })
+  },
   loadCatalogRoutes: async (routeType = null) => {
     useRouteProgressStore.setState({
       isCatalogLoading: true,
@@ -126,12 +164,12 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     })
 
     try {
-      const routes = await readRoutesWithViewerStates(routeType)
-      const preferredRouteId = useRouteProgressStore.getState().route.id
+      const state = useRouteProgressStore.getState()
+      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId, state.selectedRouteId)
 
       useRouteProgressStore.setState({
-        catalogRoutes: routesApi.toCatalogRoutes(routes),
-        ...getSyncedRouteState(routes, preferredRouteId),
+        ...nextState,
+        previewRouteId: state.previewRouteId,
         isCatalogLoading: false,
       })
     } catch (error) {
@@ -162,7 +200,8 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
       await routesApi.select(routeId, token)
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(routeId)),
+        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        previewRouteId: null,
         isRouteActionLoading: false,
       })
 
@@ -188,10 +227,14 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     })
 
     try {
-      const route = await readRouteWithViewerState(routeId)
+      const route = await readRoute(routeId)
+      const selectedRouteId = useRouteProgressStore.getState().selectedRouteId
 
       useRouteProgressStore.setState({
         route: routesApi.toRouteDetails(route) ?? fallbackRoute,
+        previewRouteId: routeId,
+        selectedRouteId,
+        hasRouteSelection: Boolean(selectedRouteId),
         isRouteActionLoading: false,
       })
 
@@ -228,19 +271,20 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     })
 
     try {
-      const purchase = await routesApi.purchase(routeId, token, { return_url: returnUrl })
+      const payment = await routesApi.createPayment(routeId, token, { return_url: returnUrl })
 
-      if (purchase.confirmation_url) {
-        window.location.assign(purchase.confirmation_url)
+      if (payment.confirmation_url) {
+        window.location.assign(payment.confirmation_url)
         return { success: true }
       }
 
-      if (!purchase.is_confirmed) {
-        throw new Error('Backend did not return a payment page URL for this route purchase.')
+      if (!payment.is_confirmed) {
+        throw new Error('Backend did not return a payment page URL for this route payment.')
       }
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(routeId)),
+        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        previewRouteId: null,
         isRouteActionLoading: false,
       })
 
@@ -277,11 +321,12 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     })
 
     try {
-      await routesApi.confirmPurchase(routeId, token)
+      await routesApi.confirmPayment(routeId, token)
       await routesApi.select(routeId, token)
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(routeId)),
+        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        previewRouteId: null,
         isRouteActionLoading: false,
       })
 

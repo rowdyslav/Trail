@@ -30,7 +30,6 @@ export interface RoutePoint {
   longitude: number
   state: RoutePointState
   kind: RoutePointKind
-  activationToken: string | null
 }
 
 export interface RouteDetails {
@@ -57,8 +56,6 @@ export interface CatalogRoute {
   city: string
   title: string
   description: string
-  distanceLabel: string
-  durationLabel: string
   image: string
   accessType: RouteAccessType
   priceLabel?: string

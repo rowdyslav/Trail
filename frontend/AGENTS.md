@@ -41,9 +41,8 @@
 - получения профиля `/me`;
 - публичного каталога маршрутов `/routes`;
 - публичного чтения маршрута `/routes/{route_id}`;
-- чтения viewer state маршрутов `/routes/viewer-states` и `/routes/{route_id}/viewer-state` для авторизованного пользователя;
 - выбора активного маршрута `/routes/{route_id}/select`;
-- покупки и подтверждения покупки маршрута `/routes/{route_id}/purchase` и `/routes/{route_id}/purchase/confirm`;
+- создания и подтверждения оплаты маршрута `/routes/{route_id}/payments` и `/routes/{route_id}/payments/confirm`;
 - получения призов;
 - создания и отмены redemption code;
 - админской авторизации;
@@ -70,11 +69,11 @@
 - Маршрут по карте должен строиться по данным стора и backend-точкам, а не через вшитые координаты в JSX.
 - Первая точка массива `route.routePoints` всегда считается стартом, последняя — финалом маршрута.
 - Геолокация пользователя отображается отдельным маркером и не должна менять порядок построения линии маршрута.
-- Viewer state маршрута (`is_purchased`, `is_active`, `is_completed`, `scanned_places_count`) подмешивай к публичным данным маршрута только через API `viewer-state`, а не вычисляй локально.
-- Post-payment flow для платного маршрута должен оставаться backend-driven: `purchase -> confirm purchase -> auto select -> route page`.
+- Viewer state маршрута (`is_purchased`, `is_available`, `is_active`, `is_completed`, `scanned_places_count`) бери из самих `GET /routes` и `GET /routes/{route_id}`, если backend отдал эти поля; не восстанавливай их локальными вычислениями.
+- Post-payment flow для платного маршрута должен оставаться backend-driven: `payments -> confirm payment -> auto select -> route page`.
 - Логику активации точки через QR-ссылку держи в `src/features/scan/api/scanApi.ts` и `src/features/scan/model/useActivatePoint.ts`.
 - Не возвращай локальную валидацию QR по `checkpoint.id`: источник истины для активации точки теперь backend.
-- Если backend временно не отдаёт `activation_token`, не генерируй его на клиенте и не подменяй локальной логикой.
+- Если backend не отдаёт `activation_token` в `places`, не генерируй его на клиенте и не строй из маршрута ссылку активации. Активация должна идти только через внешний QR / universal URL.
 
 ## Redemption и admin flow
 
