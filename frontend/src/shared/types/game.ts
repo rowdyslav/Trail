@@ -1,4 +1,4 @@
-﻿export type CheckpointStatus = 'locked' | 'available' | 'completed'
+export type CheckpointStatus = 'locked' | 'available' | 'completed'
 export type RouteAccessType = 'free' | 'paid'
 export type RedemptionRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
 export type StreakKey = 'novice' | 'explorer' | 'traveler' | 'pathfinder' | 'legend'
@@ -24,6 +24,7 @@ export interface RouteDetails {
   city: string
   title: string
   description: string
+  accessType: RouteAccessType
   currentLegLabel: string
   estimatedTime: string
   distance: string
@@ -50,21 +51,6 @@ export interface Badge {
   id: string
   title: string
   tone: string
-}
-
-export interface DailyMission {
-  id: string
-  title: string
-  subtitle: string
-  accent: string
-  icon: string
-}
-
-export interface SuggestedRoute {
-  id: string
-  title: string
-  distanceLabel: string
-  image: string
 }
 
 export interface Landmark {
@@ -129,13 +115,8 @@ export interface UserProfile {
   email?: string
   name: string
   title: string
-  level: number
-  xp: number
   rewardPointsBalance: number
   streakDays: number
   streakKey: StreakKey
-  nextLevelXp: number
-  avatarStage: number
   badges: Badge[]
 }
-

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MdArrowForward, MdMap, MdMilitaryTech, MdPaid } from 'react-icons/md'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
@@ -6,10 +7,15 @@ import { useRouteProgressStore } from '../../features/game/model/useRouteProgres
 export function HomePage() {
   const route = useRouteProgressStore((state) => state.route)
   const catalogRoutes = useRouteProgressStore((state) => state.catalogRoutes)
+  const loadCatalogRoutes = useRouteProgressStore((state) => state.loadCatalogRoutes)
   const user = useAuthStore((state) => state.user)
   const authToken = useAuthStore((state) => state.authToken)
   const freeCount = catalogRoutes.filter((item) => item.accessType === 'free').length
   const paidCount = catalogRoutes.filter((item) => item.accessType === 'paid').length
+
+  useEffect(() => {
+    void loadCatalogRoutes()
+  }, [loadCatalogRoutes])
 
   return (
     <main className="relative">
@@ -51,12 +57,12 @@ export function HomePage() {
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#5a645d]">Платных маршрута</p>
                 <p className="mt-2 text-2xl font-extrabold text-[#0f5238]">{paidCount}</p>
               </div>
-              {authToken ? (
-                <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm">
+              {authToken && (
+                <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm flex flex-col justify-between">
                   <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#5a645d]">Текущие очки</p>
                   <p className="mt-2 text-2xl font-extrabold text-[#0f5238]">{user.rewardPointsBalance}</p>
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
 

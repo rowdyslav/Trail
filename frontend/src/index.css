@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -21,6 +21,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -28,6 +29,7 @@ body {
   min-width: 320px;
   min-height: max(884px, 100dvh);
   background: #f9faf6;
+  overflow-x: hidden;
 }
 
 button,
@@ -37,6 +39,7 @@ a {
 
 #root {
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 .no-scrollbar {
@@ -94,5 +97,35 @@ a {
   100% {
     top: 78%;
     opacity: 0.8;
+  }
+}
+
+@keyframes activation-pop {
+  0% {
+    transform: scale(0.72);
+    opacity: 0;
+  }
+
+  65% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes activation-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(177, 240, 206, 0.24);
+  }
+
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 18px rgba(177, 240, 206, 0);
   }
 }

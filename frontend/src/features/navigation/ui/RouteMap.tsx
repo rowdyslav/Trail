@@ -145,17 +145,17 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-[#bfc9c1]/20 bg-white shadow-[0_20px_50px_rgba(15,82,56,0.08)]">
-      <div className="flex items-start justify-between gap-4 border-b border-[#edeeea] px-5 py-4">
+      <div className="flex flex-col gap-4 border-b border-[#edeeea] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#0f5238]">Навигация</p>
           <h2 className="text-xl font-extrabold tracking-tight text-[#1a1c1a]">Живая карта маршрута</h2>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
           <button
             type="button"
             onClick={refresh}
-            className="inline-flex items-center gap-2 rounded-full bg-[#f3f4f0] px-4 py-2 text-sm font-semibold text-[#1a1c1a] transition-colors hover:bg-[#e7e9e5]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f3f4f0] px-4 py-2 text-sm font-semibold text-[#1a1c1a] transition-colors hover:bg-[#e7e9e5]"
           >
             <MdRefresh className={isLoading || isRouteLoading ? 'animate-spin' : ''} />
             Обновить
@@ -164,7 +164,7 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
             href={openStreetMapLink}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-[#0f5238] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0f5238] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             <MdOpenInNew />
             Открыть
@@ -175,7 +175,7 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
       <div className="h-[360px] w-full bg-[#e7efe9]">
         {isRouteLoading ? (
           <div className="flex h-full w-full flex-col justify-end bg-[radial-gradient(circle_at_top,#eef8ef,transparent_55%),linear-gradient(180deg,#eef5ef_0%,#dfe9e1_100%)] p-6">
-            <div className="flex justify-center mb-14">
+            <div className="mb-14 flex justify-center">
               <div className="relative h-40 w-40">
                 <div className="absolute inset-0 animate-pulse rounded-full border-2 border-dashed border-[#0f5238]/20" />
                 <div className="absolute inset-6 rounded-[2rem] bg-white/25 blur-xl" />
