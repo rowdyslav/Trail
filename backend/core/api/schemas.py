@@ -12,6 +12,8 @@ class PlaceRead(BaseModel):
     id: PydanticObjectId
     title: str
     reward_points: int
+    latitude: float
+    longitude: float
 
 
 class RouteRead(BaseModel):

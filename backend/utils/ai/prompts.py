@@ -1,21 +1,27 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from .common import REACTION_STYLE_GUIDE, build_context_prompt, generate_reaction_message
-from .deepseek_client import DeepSeekClient
+from .types import AssistantScenario
 
 
-@dataclass(frozen=True)
-class AvatarReactionScenario:
-    system_description: str
-    event_description: str
-    generation_instruction: str
-    empty_response_error: str
-    default_extra_context: str
+REACTION_STYLE_GUIDE = (
+    "Пиши только по-русски. Реплика должна коротко поддерживать пользователя. "
+    "Без фактов о месте, без длинных образов. "
+    "Стиль живой, уверенный, не кринжовый, не детский, максимум одно предложение."
+)
 
 
-LEVEL_UP_SCENARIO = AvatarReactionScenario(
+FACT_SYSTEM_PROMPT = (
+    "Ты пишешь компактную, но содержательную информацию о месте для туриста после сканирования QR-кода. "
+    "Пиши только по-русски, обычно 2-3 предложения, живо, интересно, но без занудства. "
+    "Текст должен кратко объяснять, что это за место, по возможности упоминать период постройки, основания или исторического появления, "
+    "и добавлять один интересный факт, если ты в нем уверен. "
+    "Не добавляй списки, markdown, кавычки и служебные пояснения. "
+    "Не выдумывай сомнительные исторические детали, легенды, даты, клады, имена или редкие подробности, если ты не уверен. "
+    "Если точных сведений мало, дай осторожную, правдоподобную и общую информацию о месте без вымышленных деталей."
+)
+
+
+LEVEL_UP_SCENARIO = AssistantScenario(
     system_description="Ты генерируешь одну короткую реплику аватара-гриба-путешественника для события нового уровня.",
     event_description="Событие: новый уровень. Нужна короткая позитивная реакция на повышение уровня.",
     generation_instruction="Сгенерируй одну короткую реплику именно про действие пользователя.",
@@ -23,7 +29,7 @@ LEVEL_UP_SCENARIO = AvatarReactionScenario(
     default_extra_context="Пользователь получил новый уровень.",
 )
 
-STREAK_SCENARIO = AvatarReactionScenario(
+STREAK_SCENARIO = AssistantScenario(
     system_description="Ты генерируешь одну короткую реплику аватара-гриба-путешественника для события серии посещений.",
     event_description="Событие: серия. Нужна короткая реакция в духе 'так держать', 'хороший темп', 'продолжай'.",
     generation_instruction="Сгенерируй одну короткую реплику именно про действие пользователя.",
@@ -31,29 +37,10 @@ STREAK_SCENARIO = AvatarReactionScenario(
     default_extra_context="У пользователя серия из нескольких посещений подряд.",
 )
 
-APP_RETURN_SCENARIO = AvatarReactionScenario(
+APP_RETURN_SCENARIO = AssistantScenario(
     system_description="Ты генерируешь одну короткую реплику аватара-гриба-путешественника для события возврата в приложение.",
     event_description="Событие: пользователь вернулся в приложение. Нужна короткая фраза в духе 'с возвращением' или 'продолжим'.",
     generation_instruction="Сгенерируй одну короткую реплику именно про действие пользователя.",
     empty_response_error="DeepSeek returned empty app_return reaction",
     default_extra_context="Пользователь вернулся в приложение после паузы.",
 )
-
-
-async def generate_avatar_event_message(
-    scenario: AvatarReactionScenario,
-    extra_context: str | None = None,
-    client: DeepSeekClient | None = None,
-) -> str:
-    system_prompt = f"{scenario.system_description} {REACTION_STYLE_GUIDE}"
-    user_prompt = build_context_prompt(
-        scenario.event_description,
-        scenario.generation_instruction,
-        extra_context,
-    )
-    return await generate_reaction_message(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        empty_error=scenario.empty_response_error,
-        client=client,
-    )

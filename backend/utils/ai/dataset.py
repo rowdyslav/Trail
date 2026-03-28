@@ -6,12 +6,11 @@ from pathlib import Path
 
 from .types import PlaceRecord
 
-
-DATASET_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "ryazan_places_dataset.json"
+DATASET_PATH = Path(__file__).parent / "dataset.json"
 
 
 def _normalize_place_name(place_name: str) -> str:
-    return place_name.strip().lower()
+    return " ".join(place_name.strip().lower().split())
 
 
 @lru_cache(maxsize=1)
@@ -37,3 +36,10 @@ def get_places_index() -> dict[str, PlaceRecord]:
 
 def find_place_by_name(place_name: str) -> PlaceRecord | None:
     return get_places_index().get(_normalize_place_name(place_name))
+
+
+def get_place_description(place_name: str) -> str | None:
+    record = find_place_by_name(place_name)
+    if record is None:
+        return None
+    return record["description"]

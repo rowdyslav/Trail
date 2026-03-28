@@ -67,6 +67,8 @@ class Place(Document):
     title: str
     qr_code_value: str = Field(unique=True)
     reward_points: int = Field(default=0, ge=0)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
 
     class Settings:
         name = "places"
@@ -76,6 +78,8 @@ class Place(Document):
             id=self.id,
             title=self.title,
             reward_points=self.reward_points,
+            latitude=self.latitude,
+            longitude=self.longitude,
         )
 
 
