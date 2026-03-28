@@ -6,6 +6,7 @@ import { routesApi, type RouteRead, type RouteViewerProfileState } from '../../n
 
 interface RouteProgressState {
   route: RouteDetails
+  savedRoute: RouteDetails
   hasRouteSelection: boolean
   selectedRouteId: string | null
   previewRouteId: string | null
@@ -88,20 +89,14 @@ const getBackendSelectedRouteId = (
 }
 
 const getDisplayedRoute = (
-  catalogRoutes: RouteRead[],
-  selectedRouteId: string | null,
   previewRoute?: RouteRead | null,
-  selectedRoute?: RouteRead | null,
+  savedRoute?: RouteRead | null,
 ) => {
   if (previewRoute) {
     return previewRoute
   }
 
-  if (selectedRoute) {
-    return selectedRoute
-  }
-
-  return selectedRouteId ? catalogRoutes.find((route) => route.id === selectedRouteId) ?? null : null
+  return savedRoute ?? null
 }
 
 const ensureProfileSynced = async () => {
@@ -124,11 +119,13 @@ const getSyncedCatalogAndRouteState = async (previewRouteId?: string | null) => 
   ])
 
   const backendSelectedRouteId = getBackendSelectedRouteId(catalogRoutes, viewerState, selectedRoute)
-  const displayedRoute = getDisplayedRoute(catalogRoutes, backendSelectedRouteId, previewRoute, selectedRoute)
+  const savedRoute = selectedRoute ?? (backendSelectedRouteId ? catalogRoutes.find((route) => route.id === backendSelectedRouteId) ?? null : null)
+  const displayedRoute = getDisplayedRoute(previewRoute, savedRoute)
 
   return {
     catalogRoutes: routesApi.toCatalogRoutes(catalogRoutes, viewerState),
     route: routesApi.toRouteDetails(displayedRoute, viewerState) ?? fallbackRoute,
+    savedRoute: routesApi.toRouteDetails(savedRoute, viewerState) ?? fallbackRoute,
     selectedRouteId: backendSelectedRouteId,
     hasRouteSelection: Boolean(backendSelectedRouteId),
   }
@@ -136,6 +133,7 @@ const getSyncedCatalogAndRouteState = async (previewRouteId?: string | null) => 
 
 export const useRouteProgressStore = create<RouteProgressState>(() => ({
   route: fallbackRoute,
+  savedRoute: fallbackRoute,
   hasRouteSelection: false,
   selectedRouteId: null,
   previewRouteId: null,
@@ -179,6 +177,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
   resetRouteState: () => {
     useRouteProgressStore.setState({
       route: fallbackRoute,
+      savedRoute: fallbackRoute,
       hasRouteSelection: false,
       selectedRouteId: null,
       previewRouteId: null,

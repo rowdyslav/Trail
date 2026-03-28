@@ -8,7 +8,7 @@ import { routeShowcaseImages } from '../../features/navigation/lib/routeImage'
 const heroFallbackImage = '/img/photo/kremlin.jpg'
 
 export function HomePage() {
-  const route = useRouteProgressStore((state) => state.route)
+  const savedRoute = useRouteProgressStore((state) => state.savedRoute)
   const catalogRoutes = useRouteProgressStore((state) => state.catalogRoutes)
   const loadCatalogRoutes = useRouteProgressStore((state) => state.loadCatalogRoutes)
   const user = useAuthStore((state) => state.user)
@@ -17,7 +17,7 @@ export function HomePage() {
 
   const freeCount = catalogRoutes.filter((item) => item.accessType === 'free').length
   const paidCount = catalogRoutes.filter((item) => item.accessType === 'paid').length
-  const shouldAnimateHero = !authToken || !route.id
+  const shouldAnimateHero = !authToken || !savedRoute.id
 
   const animatedHeroImages = useMemo(() => {
     const catalogImages = catalogRoutes
@@ -28,9 +28,9 @@ export function HomePage() {
     return images.length > 0 ? images : [heroFallbackImage]
   }, [catalogRoutes])
 
-  const activeHeroImage = route.image || heroFallbackImage
+  const activeHeroImage = savedRoute.image || heroFallbackImage
 
-  const heroAlt = shouldAnimateHero ? 'Маршруты по Рязани' : route.title
+  const heroAlt = shouldAnimateHero ? 'Маршруты по Рязани' : savedRoute.title
 
   useEffect(() => {
     void loadCatalogRoutes()
@@ -114,10 +114,10 @@ export function HomePage() {
                 <img className="h-full w-full object-cover" src={activeHeroImage} alt={heroAlt} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              {authToken && route.id ? (
+              {authToken && savedRoute.id ? (
                 <div className="absolute bottom-8 left-8 right-8 text-white">
                   <p className="mb-1 text-sm font-medium opacity-80">Текущая цель</p>
-                  <h3 className="text-2xl font-bold">{route.title}</h3>
+                  <h3 className="text-2xl font-bold">{savedRoute.title}</h3>
                 </div>
               ) : (
                 <div className="absolute bottom-8 left-8 right-8 text-white">
