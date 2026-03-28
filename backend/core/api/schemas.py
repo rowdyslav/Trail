@@ -25,20 +25,11 @@ class RouteRead(BaseModel):
     price_rub: int
     places_total: int
     places: list[PlaceRead]
-    is_purchased: bool = False
-    is_available: bool = False
-    is_active: bool = False
-    is_completed: bool = False
-    scanned_places_count: int = 0
-
-
-class RouteViewerStateRead(BaseModel):
-    route_id: PydanticObjectId
-    is_purchased: bool
-    is_available: bool
-    is_active: bool
-    is_completed: bool
-    scanned_places_count: int
+    is_purchased: bool | None = None
+    is_available: bool | None = None
+    is_active: bool | None = None
+    is_completed: bool | None = None
+    scanned_places_count: int | None = None
 
 
 class PrizeRead(BaseModel):
@@ -147,7 +138,7 @@ class RedemptionCodeRead(BaseModel):
     items: list[RedemptionPrizeItem]
 
 
-class RoutePurchaseRead(BaseModel):
+class PaymentRead(BaseModel):
     route_id: PydanticObjectId
     payment_id: str | None = None
     payment_status: str
@@ -160,10 +151,10 @@ class RoutePurchaseRead(BaseModel):
 
 class UserProfileRead(UserRead):
     active_redemptions: list[RedemptionCodeRead] = Field(default_factory=list)
-    purchased_routes: list[RoutePurchaseRead] = Field(default_factory=list)
+    payments: list[PaymentRead] = Field(default_factory=list)
 
 
-class RoutePurchaseRequest(BaseModel):
+class RoutePaymentRequest(BaseModel):
     return_url: HttpUrl
 
 

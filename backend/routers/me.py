@@ -4,7 +4,7 @@ from core.api.errors import ber, unauthorized_error
 from core.api.schemas import UserProfileRead
 from core.deps import CurrentUser
 from core.domain.redemptions import list_user_active_redemptions
-from core.models import RoutePurchase
+from core.models import Payment
 
 router = APIRouter(tags=["Me"])
 
@@ -18,9 +18,9 @@ async def read_me(me: CurrentUser) -> UserProfileRead:
         redemption.to_read()
         for redemption in await list_user_active_redemptions(me.id)
     ]
-    purchased_routes = [
-        purchase.to_read()
-        for purchase in await RoutePurchase.find(
+    payments = [
+        payment.to_read()
+        for payment in await Payment.find(
             {
                 "user_id": me.id,
                 "confirmed_at": {"$ne": None},
@@ -31,5 +31,5 @@ async def read_me(me: CurrentUser) -> UserProfileRead:
     ]
     return me.to_profile_read(
         active_redemptions=active_redemptions,
-        purchased_routes=purchased_routes,
+        payments=payments,
     )

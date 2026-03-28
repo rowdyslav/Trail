@@ -8,12 +8,11 @@ from pydantic import EmailStr, Field, model_validator
 from pymongo import IndexModel
 
 from .api.schemas import (
+    PaymentRead,
     PlaceRead,
     PrizeRead,
     RedemptionCodeRead,
-    RoutePurchaseRead,
     RouteRead,
-    RouteViewerStateRead,
     UserProfileRead,
     UserRead,
 )
@@ -46,12 +45,12 @@ class User(PasswordMixin, Document):
         self,
         *,
         active_redemptions: list[RedemptionCodeRead],
-        purchased_routes: list[RoutePurchaseRead],
+        payments: list[PaymentRead],
     ) -> UserProfileRead:
         return UserProfileRead(
             **self.model_dump(),
             active_redemptions=active_redemptions,
-            purchased_routes=purchased_routes,
+            payments=payments,
         )
 
 
@@ -119,23 +118,6 @@ class Route(Document):
             places=[place.to_read() for place in self.places],
         )
 
-    def to_viewer_state_read(
-        self,
-        *,
-        is_purchased: bool,
-        is_active: bool,
-        is_completed: bool,
-        scanned_places_count: int,
-    ) -> RouteViewerStateRead:
-        return RouteViewerStateRead(
-            route_id=self.id,
-            is_purchased=is_purchased,
-            is_available=is_purchased,
-            is_active=is_active,
-            is_completed=is_completed,
-            scanned_places_count=scanned_places_count,
-        )
-
 
 class Prize(Document):
     title: str
@@ -156,21 +138,21 @@ class Prize(Document):
         )
 
 
-class RoutePlaceCompletion(Document):
+class WalkScans(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
     place_id: PydanticObjectId
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     class Settings:
-        name = "route_place_completions"
+        name = "walk_point_scans"
         indexes = [
             IndexModel([("user_id", 1), ("route_id", 1), ("place_id", 1)], unique=True),
             IndexModel([("user_id", 1), ("route_id", 1)]),
         ]
 
 
-class UserRouteProgress(Document):
+class Walk(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
     scanned_place_ids: list[PydanticObjectId] = Field(default_factory=list)
@@ -178,25 +160,13 @@ class UserRouteProgress(Document):
     completed_at: datetime | None = None
 
     class Settings:
-        name = "user_route_progress"
+        name = "walks"
         indexes = [
             IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
         ]
 
 
-class RouteCompletion(Document):
-    user_id: PydanticObjectId
-    route_id: PydanticObjectId
-    completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    class Settings:
-        name = "route_completions"
-        indexes = [
-            IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
-        ]
-
-
-class RoutePurchase(Document):
+class Payment(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
     payment_id: str | None = None
@@ -206,21 +176,17 @@ class RoutePurchase(Document):
     confirmed_at: datetime | None = None
 
     class Settings:
-        name = "route_purchases"
+        name = "payments"
         indexes = [
             IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
-            IndexModel(
-                [("payment_id", 1)],
-                unique=True,
-                sparse=True,
-            ),
+            IndexModel([("payment_id", 1)], unique=True, sparse=True),
         ]
 
     def is_confirmed(self) -> bool:
         return self.payment_status == "succeeded" and self.confirmed_at is not None
 
-    def to_read(self, *, confirmation_url: str | None = None) -> RoutePurchaseRead:
-        return RoutePurchaseRead(
+    def to_read(self, *, confirmation_url: str | None = None) -> PaymentRead:
+        return PaymentRead(
             route_id=self.route_id,
             payment_id=self.payment_id,
             payment_status=self.payment_status,

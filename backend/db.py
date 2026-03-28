@@ -4,15 +4,14 @@ from pymongo import AsyncMongoClient
 from core.domain.rewards import RouteType
 from core.models import (
     Admin,
+    Payment,
     Place,
     Prize,
     RedemptionCode,
     Route,
-    RouteCompletion,
-    RoutePlaceCompletion,
-    RoutePurchase,
     User,
-    UserRouteProgress,
+    Walk,
+    WalkScans,
 )
 from env import ENV
 
@@ -238,14 +237,16 @@ async def seed_data() -> None:
 
 
 async def reset_gameplay_data() -> None:
-    await RoutePlaceCompletion.get_pymongo_collection().delete_many({})
-    await UserRouteProgress.get_pymongo_collection().delete_many({})
-    await RouteCompletion.get_pymongo_collection().delete_many({})
-    await RoutePurchase.get_pymongo_collection().delete_many({})
+    await WalkScans.get_pymongo_collection().delete_many({})
+    await Walk.get_pymongo_collection().delete_many({})
+    await Payment.get_pymongo_collection().delete_many({})
     await RedemptionCode.get_pymongo_collection().delete_many({})
     await Route.get_pymongo_collection().delete_many({})
     await Place.get_pymongo_collection().delete_many({})
-    await User.get_pymongo_collection().update_many({}, {"$set": {"active_route_id": None}})
+    await User.get_pymongo_collection().update_many(
+        {},
+        {"$set": {"active_route_id": None, "purchased_route_ids": []}},
+    )
 
 
 async def init_db() -> None:
@@ -257,10 +258,9 @@ async def init_db() -> None:
             Route,
             Place,
             Prize,
-            RoutePlaceCompletion,
-            UserRouteProgress,
-            RouteCompletion,
-            RoutePurchase,
+            WalkScans,
+            Walk,
+            Payment,
             RedemptionCode,
         ],
     )

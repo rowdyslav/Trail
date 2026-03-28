@@ -28,16 +28,16 @@ from core.api.schemas import (
 )
 from core.deps import CurrentUser
 from core.domain.routes import (
-    build_route_progress,
-    get_or_create_user_progress,
-    get_user_purchase,
+    build_walk_progress,
+    get_or_create_walk,
+    get_user_payment,
+    grant_route_access_from_payment,
     has_route_access,
-    mark_route_completed,
+    mark_walk_completed,
     now_utc,
-    sync_confirmed_route_purchase,
 )
 from core.domain.streaks import calculate_streak_days
-from core.models import Place, Route, RoutePlaceCompletion, UserRouteProgress
+from core.models import Place, Route, Walk, WalkScans
 from env import ENV
 from utils.ai import AssistantService
 
@@ -103,11 +103,11 @@ async def build_duplicate_response(
     me: CurrentUser,
     route: Route,
     place: Place,
-    progress: UserRouteProgress,
+    walk: Walk,
     completed_at: datetime | None,
 ) -> ScanResponse:
     ai_fact, ai_fallback = await generate_scan_ai_fact(place.title, route.title)
-    route_progress_raw = build_route_progress(route, progress)
+    walk_progress_raw = build_walk_progress(route, walk)
     return create_scan_response(
         status="duplicate",
         message="Point already scanned in the selected route",
@@ -117,9 +117,9 @@ async def build_duplicate_response(
         streak=ScanStreakRead(days=me.streak_days, changed=False),
         avatar=ScanAvatarRead(state=me.streak_key, changed=False),
         route_progress=ScanRouteProgressRead(
-            completed_points=route_progress_raw["completed_points"],
-            total_points=route_progress_raw["total_points"],
-            is_completed=route_progress_raw["is_completed"],
+            completed_points=walk_progress_raw["completed_points"],
+            total_points=walk_progress_raw["total_points"],
+            is_completed=walk_progress_raw["is_completed"],
         ),
         reward_points=ScanRewardPointsRead(
             scan_gained=0,
@@ -151,16 +151,16 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     if route is None:
         raise route_not_active_error
 
-    progress = await get_or_create_user_progress(me.id, route.id)
-    if progress.is_completed:
+    walk = await get_or_create_walk(me.id, route.id)
+    if walk.is_completed:
         me.active_route_id = None
         await me.save()
         raise route_already_completed_error
 
-    purchase = await get_user_purchase(me.id, route.id)
-    if purchase is not None and purchase.is_confirmed():
-        sync_confirmed_route_purchase(me, route.id)
-    if not has_route_access(route, me, purchase=purchase):
+    payment = await get_user_payment(me.id, route.id)
+    if payment is not None and payment.is_confirmed():
+        grant_route_access_from_payment(me, route.id)
+    if not has_route_access(route, me, payment=payment):
         await me.save()
         raise route_not_purchased_error
 
@@ -170,18 +170,18 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     if not route.has_place(place.id):
         raise place_not_in_active_route_error
 
-    existing_completion = await RoutePlaceCompletion.find_one(
-        RoutePlaceCompletion.user_id == me.id,
-        RoutePlaceCompletion.route_id == route.id,
-        RoutePlaceCompletion.place_id == place.id,
+    existing_scan = await WalkScans.find_one(
+        WalkScans.user_id == me.id,
+        WalkScans.route_id == route.id,
+        WalkScans.place_id == place.id,
     )
-    if existing_completion is not None:
+    if existing_scan is not None:
         return await build_duplicate_response(
             me=me,
             route=route,
             place=place,
-            progress=progress,
-            completed_at=existing_completion.completed_at,
+            walk=walk,
+            completed_at=existing_scan.completed_at,
         )
 
     completed_at = now_utc()
@@ -189,24 +189,24 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     previous_avatar_state = me.streak_key
 
     try:
-        completion = await RoutePlaceCompletion(
+        scan = await WalkScans(
             user_id=me.id,
             route_id=route.id,
             place_id=place.id,
             completed_at=completed_at,
         ).insert()
     except DuplicateKeyError:
-        completion = await RoutePlaceCompletion.find_one(
-            RoutePlaceCompletion.user_id == me.id,
-            RoutePlaceCompletion.route_id == route.id,
-            RoutePlaceCompletion.place_id == place.id,
+        scan = await WalkScans.find_one(
+            WalkScans.user_id == me.id,
+            WalkScans.route_id == route.id,
+            WalkScans.place_id == place.id,
         )
         return await build_duplicate_response(
             me=me,
             route=route,
             place=place,
-            progress=progress,
-            completed_at=None if completion is None else completion.completed_at,
+            walk=walk,
+            completed_at=None if scan is None else scan.completed_at,
         )
 
     me.streak_days = calculate_streak_days(
@@ -217,26 +217,26 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
     me.sync_streak_key()
     me.last_completed_at = completed_at
 
-    if place.id not in progress.scanned_place_ids:
-        progress.scanned_place_ids.append(place.id)
+    if place.id not in walk.scanned_place_ids:
+        walk.scanned_place_ids.append(place.id)
 
     scan_gained = place.reward_points
     if scan_gained > 0:
         me.reward_points += scan_gained
 
     completion_bonus_gained = 0
-    if len(progress.scanned_place_ids) == len(route.places):
-        completion_bonus_gained = await mark_route_completed(
+    if len(walk.scanned_place_ids) == len(route.places):
+        completion_bonus_gained = await mark_walk_completed(
             user=me,
             route=route,
-            progress=progress,
+            walk=walk,
             completed_at=completed_at,
         )
 
-    await progress.save()
+    await walk.save()
     await me.save()
 
-    route_progress_raw = build_route_progress(route, progress)
+    walk_progress_raw = build_walk_progress(route, walk)
     ai_fact, ai_fallback = await generate_scan_ai_fact(place.title, route.title)
     return create_scan_response(
         status="success",
@@ -253,9 +253,9 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             changed=me.streak_key != previous_avatar_state,
         ),
         route_progress=ScanRouteProgressRead(
-            completed_points=route_progress_raw["completed_points"],
-            total_points=route_progress_raw["total_points"],
-            is_completed=route_progress_raw["is_completed"],
+            completed_points=walk_progress_raw["completed_points"],
+            total_points=walk_progress_raw["total_points"],
+            is_completed=walk_progress_raw["is_completed"],
         ),
         reward_points=ScanRewardPointsRead(
             scan_gained=scan_gained,
@@ -263,5 +263,5 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             total_balance=me.reward_points,
         ),
         ai=ScanAIRead(fact=ai_fact, fallback=ai_fallback),
-        completed_at=completion.completed_at,
+        completed_at=scan.completed_at,
     )
