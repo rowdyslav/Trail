@@ -249,7 +249,7 @@ export function CatalogPage() {
                           disabled={isRouteActionLoading}
                           className="rounded-full border border-[#0f5238] px-5 py-3 text-sm font-bold text-[#0f5238] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {isRouteActionLoading ? 'Выбираем...' : 'Выбрать маршрут'}
+                          {isRouteActionLoading ? 'Сохраняем...' : 'Сохранить маршрут'}
                         </button>
                       ) : canBuy ? authToken ? (
                         <button

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MdCheckCircle, MdChevronRight, MdFlag, MdLock, MdQrCode2, MdRadioButtonChecked } from 'react-icons/md'
+
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
 import { RouteMap } from '../../features/navigation/ui/RouteMap'
@@ -26,6 +27,7 @@ export function RoutePage() {
   const isPreview = Boolean(previewRouteId)
   const isPaidLocked = route.accessType === 'paid' && !route.isPurchased
   const shouldShowMap = Boolean(authToken && (route.isActive || isPreview))
+  const shouldShowSavedRouteActions = Boolean(!isPaidLocked && !route.isActive)
 
   useEffect(() => {
     if (authToken && pendingPurchaseRouteId) {
@@ -68,7 +70,7 @@ export function RoutePage() {
     await purchaseRoute({ routeId: route.id, returnUrl })
   }
 
-  const handleSelectRoute = async () => {
+  const handleSaveRoute = async () => {
     const result = await selectRoute(route.id)
 
     if (result.success) {
@@ -76,7 +78,7 @@ export function RoutePage() {
     }
   }
 
-  const handleOpenSelectedRoute = async () => {
+  const handleOpenSavedRoute = async () => {
     const result = await clearPreviewRoute()
 
     if (result.success) {
@@ -87,15 +89,15 @@ export function RoutePage() {
   const statusLabel = route.isCompleted
     ? 'Маршрут завершён'
     : route.isActive
-      ? 'Активный маршрут'
+      ? 'Сохранённый маршрут'
       : isPreview
         ? 'Превью маршрута'
         : 'Маршрут доступен'
 
-  const navigationTitle = authToken ? 'Карта откроется после выбора маршрута' : 'Карта доступна после входа'
+  const navigationTitle = authToken ? 'Карта откроется после сохранения маршрута' : 'Карта доступна после входа'
   const navigationDescription = authToken
-    ? 'Сначала нужно выбрать этот маршрут активным. После этого откроется живая карта и навигация по точкам.'
-    : 'Войдите в аккаунт, чтобы выбрать маршрут и открыть навигацию по точкам.'
+    ? 'Сначала нужно сохранить этот маршрут. После этого откроется живая карта и навигация по точкам.'
+    : 'Войдите в аккаунт, чтобы сохранить маршрут и открыть навигацию по точкам.'
 
   if (!authToken) {
     return (
@@ -104,11 +106,11 @@ export function RoutePage() {
           <div className="space-y-4">
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#0f5238]">Маршрут</p>
             <h1 className="text-3xl font-extrabold tracking-tight text-[#1a1c1a]">
-              Войдите в аккаунт, чтобы выбрать маршрут
+              Войдите в аккаунт, чтобы сохранить маршрут
             </h1>
             <p className="text-sm leading-6 text-[#404943]">
-              Для незарегистрированного пользователя текущий маршрут не отображается. После входа вы сможете выбрать
-              маршрут и открыть навигацию по точкам.
+              Для гостя текущий маршрут не отображается. После входа вы сможете сохранить маршрут и открыть навигацию
+              по точкам.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Link
@@ -136,7 +138,7 @@ export function RoutePage() {
         <section className="rounded-[2rem] border border-[#dfe5dc] bg-white p-6 shadow-[0_16px_40px_rgba(15,82,56,0.08)]">
           <div className="space-y-4">
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#0f5238]">Маршрут</p>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#1a1c1a]">Сначала выберите маршрут</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#1a1c1a]">Сначала сохраните маршрут</h1>
             <p className="text-sm leading-6 text-[#404943]">
               У вас пока нет активного или открытого для просмотра маршрута. Перейдите в каталог и откройте нужный
               маршрут.
@@ -199,7 +201,7 @@ export function RoutePage() {
           {isPaidLocked ? (
             <div className="rounded-[1.5rem] bg-[#f9faf6] p-5">
               <p className="text-sm leading-6 text-[#404943]">
-                Этот маршрут откроется после покупки. После подтверждения оплаты он будет автоматически выбран и сразу
+                Этот маршрут откроется после покупки. После подтверждения оплаты он будет автоматически сохранён и сразу
                 станет доступен на этом экране.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -219,46 +221,37 @@ export function RoutePage() {
                 </Link>
               </div>
             </div>
-          ) : !route.isActive ? (
-            <div className="rounded-[1.5rem] bg-[#f9faf6] p-5">
-              <p className="text-sm leading-6 text-[#404943]">
-                {isPreview
-                  ? 'Это временный просмотр маршрута.'
-                  : 'Маршрут доступен, но навигация откроется только после выбора активного маршрута.'}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleSelectRoute()}
-                  disabled={isRouteActionLoading}
-                  className="rounded-full bg-[#0f5238] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isRouteActionLoading ? 'Выбираем...' : 'Выбрать маршрут'}
-                </button>
-                {isPreview && hasRouteSelection ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleOpenSelectedRoute()}
-                    disabled={isRouteActionLoading}
-                    className="rounded-full border border-[#c8d2c9] bg-white px-5 py-3 text-sm font-bold text-[#1a1c1a] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Открыть выбранный маршрут
-                  </button>
-                ) : null}
-                <Link
-                  to="/routes"
-                  className="inline-flex items-center justify-center rounded-full border border-[#c8d2c9] bg-white px-5 py-3 text-sm font-bold text-[#1a1c1a]"
-                >
-                  Открыть каталог
-                </Link>
-              </div>
-            </div>
           ) : null}
         </div>
       </section>
 
       {shouldShowMap ? (
-        <RouteMap />
+        <RouteMap
+          actions={
+            shouldShowSavedRouteActions ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveRoute()}
+                  disabled={isRouteActionLoading}
+                  className="rounded-full bg-[#0f5238] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isRouteActionLoading ? 'Сохраняем...' : 'Сохранить маршрут'}
+                </button>
+                {isPreview && hasRouteSelection ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleOpenSavedRoute()}
+                    disabled={isRouteActionLoading}
+                    className="rounded-full border border-[#c8d2c9] bg-white px-5 py-3 text-sm font-bold text-[#1a1c1a] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Открыть сохранённый маршрут
+                  </button>
+                ) : null}
+              </>
+            ) : undefined
+          }
+        />
       ) : (
         <section className="rounded-[2rem] border border-[#dfe5dc] bg-white p-6 shadow-[0_16px_40px_rgba(15,82,56,0.08)]">
           <div className="space-y-3">

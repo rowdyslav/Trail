@@ -163,7 +163,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
 
       return { success: true }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Не удалось открыть выбранный маршрут.'
+      const message = error instanceof Error ? error.message : 'Не удалось открыть сохранённый маршрут.'
 
       useRouteProgressStore.setState({
         isRouteActionLoading: false,

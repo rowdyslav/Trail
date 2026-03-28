@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -77,7 +77,11 @@ const getRouteLink = (positions: MapPosition[]) => {
   return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${start[0]}%2C${start[1]}%3B${finish[0]}%2C${finish[1]}`
 }
 
-export function RouteMap() {
+interface RouteMapProps {
+  actions?: ReactNode
+}
+
+export function RouteMap({ actions }: RouteMapProps) {
   const route = useRouteProgressStore((state) => state.route)
   const { coordinates, error, isLoading, refresh } = useCurrentGeolocation({
     enableHighAccuracy: true,
@@ -208,6 +212,12 @@ export function RouteMap() {
           </a>
         </div>
       </div>
+
+      {actions ? (
+        <div className="border-b border-[#edeeea] bg-[#f8faf7] px-5 py-4">
+          <div className="flex flex-wrap gap-3">{actions}</div>
+        </div>
+      ) : null}
 
       <div className="relative z-0 h-[360px] w-full bg-[#e7efe9]">
         {isRouteLoading ? (

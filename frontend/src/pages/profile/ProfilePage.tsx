@@ -85,9 +85,9 @@ export function ProfilePage() {
         <div className="absolute inset-0 -z-10 scale-150 rounded-full bg-gradient-to-b from-[#b1f0ce]/30 to-transparent opacity-50 blur-3xl" />
 
         <div className="group relative flex flex-col items-center">
-          <div className="absolute -top-16 left-1/2 z-10 w-[min(18rem,calc(100vw-3rem))] -translate-x-[10%] rounded-[1.75rem] border border-[#dfe5dc] bg-white px-5 py-4 text-center shadow-[0_16px_40px_rgba(15,82,56,0.08)] md:-top-10 md:left-[60%] md:w-80 md:-translate-x-0">
+          <div className="absolute -top-18 right-0 z-10 w-[min(15rem,calc(100vw-2.5rem))] rounded-[1.75rem] border border-[#dfe5dc] bg-white px-4 py-3 text-center shadow-[0_16px_40px_rgba(15,82,56,0.08)] sm:-top-16 sm:left-1/2 sm:right-auto sm:w-[min(18rem,calc(100vw-3rem))] sm:-translate-x-[10%] sm:px-5 sm:py-4 md:-top-10 md:left-[60%] md:w-80 md:-translate-x-0">
             <p className="text-sm font-medium leading-6 text-[#404943]">{mushroomReplica}</p>
-            <div className="absolute left-10 top-full h-4 w-4 -translate-y-1/2 rotate-45 border-r border-b border-[#dfe5dc] bg-white" />
+            <div className="absolute right-8 top-full h-4 w-4 -translate-y-1/2 rotate-45 border-r border-b border-[#dfe5dc] bg-white sm:left-10 sm:right-auto" />
           </div>
 
           <div className="size-52 overflow-hidden rounded-full border-4 border-black bg-white shadow-[0_16px_40px_rgba(15,82,56,0.08)] transition-transform duration-500 group-hover:scale-105 md:size-80">
