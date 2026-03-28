@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAdminStore } from '../../features/admin/model/useAdminStore'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
-  const adminSession = useGameStore((state) => state.adminSession)
-  const loginAdmin = useGameStore((state) => state.loginAdmin)
+  const adminSession = useAdminStore((state) => state.adminSession)
+  const loginAdmin = useAdminStore((state) => state.loginAdmin)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)

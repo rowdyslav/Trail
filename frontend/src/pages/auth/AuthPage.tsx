@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAuthStore } from '../../features/auth/model/useAuthStore'
+import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 
 type AuthMode = 'login' | 'register'
 
 export function AuthPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const authToken = useGameStore((state) => state.authToken)
-  const isAuthLoading = useGameStore((state) => state.isAuthLoading)
-  const loginUser = useGameStore((state) => state.loginUser)
-  const registerUser = useGameStore((state) => state.registerUser)
+  const authToken = useAuthStore((state) => state.authToken)
+  const isAuthLoading = useAuthStore((state) => state.isAuthLoading)
+  const loginUser = useAuthStore((state) => state.loginUser)
+  const registerUser = useAuthStore((state) => state.registerUser)
+  const hydrateActiveRedemptions = useRedemptionStore((state) => state.hydrateActiveRedemptions)
+  const fetchPrizeCatalog = useRedemptionStore((state) => state.fetchPrizeCatalog)
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,6 +40,8 @@ export function AuthPage() {
       return
     }
 
+    hydrateActiveRedemptions(result.profile ?? null)
+    await fetchPrizeCatalog()
     navigate(nextPath, { replace: true })
   }
 

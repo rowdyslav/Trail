@@ -1,9 +1,9 @@
-import { useGameStore } from '../../game/model/useGameStore'
+import { useRewardStore } from '../model/useRewardStore'
 import { Button } from '../../../shared/ui/Button'
 
 export function RewardModal() {
-  const reward = useGameStore((state) => state.activeReward)
-  const closeReward = useGameStore((state) => state.closeReward)
+  const reward = useRewardStore((state) => state.activeReward)
+  const closeReward = useRewardStore((state) => state.closeReward)
 
   if (!reward) {
     return null

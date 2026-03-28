@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
 
 const sectionMeta = {
   free: {
@@ -13,7 +13,7 @@ const sectionMeta = {
 } as const
 
 export function RoutesCatalogPage() {
-  const catalogRoutes = useGameStore((state) => state.catalogRoutes)
+  const catalogRoutes = useRouteProgressStore((state) => state.catalogRoutes)
   const freeRoutes = catalogRoutes.filter((route) => route.accessType === 'free')
   const paidRoutes = catalogRoutes.filter((route) => route.accessType === 'paid')
 

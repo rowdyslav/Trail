@@ -1,9 +1,9 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 
 export function RedeemResultPage() {
   const { requestId = '' } = useParams()
-  const request = useGameStore((state) => state.getRedemptionById(requestId))
+  const request = useRedemptionStore((state) => state.getRedemptionById(requestId))
   const isActive = request?.status === 'active'
 
   if (!request) {

@@ -1,7 +1,8 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { MdExplore, MdMap, MdMilitaryTech, MdOutlinePerson, MdOutlineQrCodeScanner } from 'react-icons/md'
+import { useAuthStore } from '../../features/auth/model/useAuthStore'
+import { useScanUiStore } from '../../features/scan/model/useScanUiStore'
 import { RewardModal } from '../../features/rewards/ui/RewardModal'
-import { useGameStore } from '../../features/game/model/useGameStore'
 import { ScanOverlay } from '../../features/scan/ui/ScanOverlay'
 import { cn } from '../../shared/lib/cn'
 
@@ -14,8 +15,8 @@ const navItems = [
 
 export function AppShell() {
   const location = useLocation()
-  const user = useGameStore((state) => state.user)
-  const openScan = useGameStore((state) => state.openScan)
+  const user = useAuthStore((state) => state.user)
+  const openScan = useScanUiStore((state) => state.openScan)
 
   return (
     <div className="min-h-screen bg-[#f9faf6] text-[#1a1c1a]">

@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAuthStore } from '../../features/auth/model/useAuthStore'
+import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 import { Button } from '../../shared/ui/Button'
 
 export function RedeemPage() {
   const navigate = useNavigate()
-  const user = useGameStore((state) => state.user)
-  const prizeCatalog = useGameStore((state) => state.prizeCatalog)
-  const isPrizeCatalogLoading = useGameStore((state) => state.isPrizeCatalogLoading)
-  const createRedemptionRequest = useGameStore((state) => state.createRedemptionRequest)
+  const user = useAuthStore((state) => state.user)
+  const prizeCatalog = useRedemptionStore((state) => state.prizeCatalog)
+  const isPrizeCatalogLoading = useRedemptionStore((state) => state.isPrizeCatalogLoading)
+  const createRedemptionRequest = useRedemptionStore((state) => state.createRedemptionRequest)
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>('')
   const [quantity, setQuantity] = useState('1')
   const [error, setError] = useState<string | null>(null)

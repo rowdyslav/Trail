@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { getRedemptionDraftSummary } from '../../features/redemption/lib/getRedemptionDraftSummary'
+import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 import { RedemptionConfirmationCard } from '../../features/redemption/ui/RedemptionConfirmationCard'
 
 export function RedeemConfirmPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const prizeCatalog = useGameStore((state) => state.prizeCatalog)
-  const user = useGameStore((state) => state.user)
-  const draftItems = useGameStore((state) => state.redemptionDraftItems)
-  const createRedemptionRequest = useGameStore((state) => state.createRedemptionRequest)
-  const activeRequest = useGameStore((state) => state.getActiveRedemptionForCurrentUser())
+  const prizeCatalog = useRedemptionStore((state) => state.prizeCatalog)
+  const user = useAuthStore((state) => state.user)
+  const draftItems = useRedemptionStore((state) => state.redemptionDraftItems)
+  const createRedemptionRequest = useRedemptionStore((state) => state.createRedemptionRequest)
+  const activeRequest = useRedemptionStore((state) => state.getActiveRedemptionForCurrentUser())
 
   const summary = useMemo(
     () => getRedemptionDraftSummary(prizeCatalog, draftItems, user.rewardPointsBalance),

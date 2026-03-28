@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useGameStore } from '../../game/model/useGameStore'
+import { useRouteProgressStore } from '../../game/model/useRouteProgressStore'
 import { getCurrentCheckpoint, getQrCodeValue } from '../model/qrPayload'
+import { useScanUiStore } from '../model/useScanUiStore'
 import { useQrScanner } from '../model/useQrScanner'
 import { cn } from '../../../shared/lib/cn'
 import { Button } from '../../../shared/ui/Button'
 
 export function ScanOverlay() {
-  const route = useGameStore((state) => state.route)
-  const isOpen = useGameStore((state) => state.isScanOpen)
-  const isScanning = useGameStore((state) => state.isScanning)
-  const storeCloseScan = useGameStore((state) => state.closeScan)
-  const completeScan = useGameStore((state) => state.completeScan)
-  const setScanning = useGameStore((state) => state.setScanning)
+  const route = useRouteProgressStore((state) => state.route)
+  const completeScan = useRouteProgressStore((state) => state.completeScan)
+  const isOpen = useScanUiStore((state) => state.isScanOpen)
+  const isScanning = useScanUiStore((state) => state.isScanning)
+  const storeCloseScan = useScanUiStore((state) => state.closeScan)
+  const setScanning = useScanUiStore((state) => state.setScanning)
   const currentCheckpoint = getCurrentCheckpoint(route.checkpoints)
   const [feedback, setFeedback] = useState<string | null>(null)
 

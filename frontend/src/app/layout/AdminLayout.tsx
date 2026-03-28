@@ -1,9 +1,9 @@
 import { Outlet, Navigate, Link } from 'react-router-dom'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAdminStore } from '../../features/admin/model/useAdminStore'
 
 export function AdminLayout() {
-  const adminSession = useGameStore((state) => state.adminSession)
-  const logoutAdmin = useGameStore((state) => state.logoutAdmin)
+  const adminSession = useAdminStore((state) => state.adminSession)
+  const logoutAdmin = useAdminStore((state) => state.logoutAdmin)
 
   if (!adminSession) {
     return <Navigate to="/admin/login" replace />

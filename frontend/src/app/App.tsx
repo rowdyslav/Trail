@@ -1,14 +1,21 @@
 import { useEffect } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
-import { useGameStore } from '../features/game/model/useGameStore'
+import { useAuthStore } from '../features/auth/model/useAuthStore'
+import { useRedemptionStore } from '../features/redemption/model/useRedemptionStore'
 
 export function App() {
-  const initializeAuth = useGameStore((state) => state.initializeAuth)
+  const initializeAuth = useAuthStore((state) => state.initializeAuth)
+  const hydrateActiveRedemptions = useRedemptionStore((state) => state.hydrateActiveRedemptions)
+  const fetchPrizeCatalog = useRedemptionStore((state) => state.fetchPrizeCatalog)
 
   useEffect(() => {
-    void initializeAuth()
-  }, [initializeAuth])
+    void (async () => {
+      const profile = await initializeAuth()
+      hydrateActiveRedemptions(profile)
+      await fetchPrizeCatalog()
+    })()
+  }, [fetchPrizeCatalog, hydrateActiveRedemptions, initializeAuth])
 
   return <RouterProvider router={router} />
 }

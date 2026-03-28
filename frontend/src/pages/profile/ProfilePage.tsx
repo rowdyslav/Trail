@@ -13,13 +13,15 @@ import {
 } from 'react-icons/md'
 import { Link } from 'react-router-dom'
 import { profileStats, upgradeItems } from '../../entities/quest/model/mockData'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAuthStore } from '../../features/auth/model/useAuthStore'
+import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 import { ActiveRedemptionCard } from '../../features/redemption/ui/ActiveRedemptionCard'
 
 export function ProfilePage() {
-  const user = useGameStore((state) => state.user)
-  const activeRedemption = useGameStore((state) => state.getActiveRedemptionForCurrentUser())
-  const logoutUser = useGameStore((state) => state.logoutUser)
+  const user = useAuthStore((state) => state.user)
+  const activeRedemption = useRedemptionStore((state) => state.getActiveRedemptionForCurrentUser())
+  const logoutUser = useAuthStore((state) => state.logoutUser)
+  const clearRedemptionData = useRedemptionStore((state) => state.clearRedemptionData)
 
   return (
     <main className="space-y-8 px-6 pt-8 pb-32">
@@ -145,7 +147,10 @@ export function ProfilePage() {
       <section className="pt-2">
         <button
           type="button"
-          onClick={logoutUser}
+          onClick={() => {
+            logoutUser()
+            clearRedemptionData()
+          }}
           className="w-full rounded-full border border-[#d6ddd6] bg-white py-4 text-sm font-bold text-[#1a1c1a] transition hover:bg-[#f3f4f0]"
         >
           Выйти из аккаунта

@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react'
 import type { AdminRedemptionValidation } from '../../features/redemption/api/adminRedemptionsApi'
-import { useGameStore } from '../../features/game/model/useGameStore'
+import { useAdminRedemptionStore } from '../../features/redemption/model/useAdminRedemptionStore'
 
 const getStatusMeta = (status: AdminRedemptionValidation['status']) => {
   switch (status) {
@@ -28,8 +28,8 @@ const getStatusMeta = (status: AdminRedemptionValidation['status']) => {
 }
 
 export function AdminRedemptionsPage() {
-  const readAdminRedemptionByCode = useGameStore((state) => state.readAdminRedemptionByCode)
-  const confirmRedemptionIssuance = useGameStore((state) => state.confirmRedemptionIssuance)
+  const readAdminRedemptionByCode = useAdminRedemptionStore((state) => state.readAdminRedemptionByCode)
+  const confirmRedemptionIssuance = useAdminRedemptionStore((state) => state.confirmRedemptionIssuance)
   const [searchCode, setSearchCode] = useState('')
   const [currentRedemption, setCurrentRedemption] = useState<AdminRedemptionValidation | null>(null)
   const [message, setMessage] = useState<string | null>(null)
