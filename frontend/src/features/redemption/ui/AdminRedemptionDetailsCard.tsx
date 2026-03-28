@@ -26,7 +26,7 @@ export function AdminRedemptionDetailsCard({
     <section className="rounded-[2rem] bg-white p-6 shadow-[0_16px_40px_rgba(15,82,56,0.08)] sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#5a645d]">Р”РµС‚Р°Р»Рё Р·Р°СЏРІРєРё</p>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#5a645d]">Детали заявки</p>
           <h2 className="mt-2 text-3xl font-extrabold text-[#1a1c1a]">{request.code}</h2>
         </div>
         <span
@@ -34,21 +34,21 @@ export function AdminRedemptionDetailsCard({
             isIssued ? 'bg-[#eceef3] text-[#44506b]' : 'bg-[#edf7ee] text-[#0f5238]'
           }`}
         >
-          {isIssued ? 'Р’С‹РґР°РЅРѕ' : 'РћР¶РёРґР°РµС‚ РІС‹РґР°С‡Рё'}
+          {isIssued ? 'Выдано' : 'Ожидает выдачи'}
         </span>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded-[1.5rem] bg-[#f6f8f3] p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ</p>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Пользователь</p>
           <p className="mt-2 text-lg font-bold text-[#1a1c1a]">{request.userName}</p>
         </div>
         <div className="rounded-[1.5rem] bg-[#f6f8f3] p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">РЎРѕР·РґР°РЅРѕ</p>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Создано</p>
           <p className="mt-2 text-lg font-bold text-[#1a1c1a]">{dateFormatter.format(new Date(request.createdAt))}</p>
         </div>
         <div className="rounded-[1.5rem] bg-[#f6f8f3] p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Р’СЃРµРіРѕ Р±Р°Р»Р»РѕРІ</p>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Всего баллов</p>
           <p className="mt-2 text-lg font-bold text-[#0f5238]">{request.totalPoints}</p>
         </div>
       </div>
@@ -59,7 +59,7 @@ export function AdminRedemptionDetailsCard({
             <div>
               <p className="text-base font-bold text-[#1a1c1a]">{item.titleSnapshot}</p>
               <p className="mt-1 text-sm text-[#404943]">
-                {item.quantity} С€С‚. Г— {item.pointsCostSnapshot} Р±Р°Р»Р»РѕРІ
+                {item.quantity} шт. × {item.pointsCostSnapshot} баллов
               </p>
             </div>
             <div className="text-right font-extrabold text-[#0f5238]">{item.totalPoints}</div>
@@ -69,7 +69,7 @@ export function AdminRedemptionDetailsCard({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={onConfirmIssuance} disabled={isIssued}>
-          {isIssued ? 'Р—Р°СЏРІРєР° СѓР¶Рµ РѕР±СЂР°Р±РѕС‚Р°РЅР°' : 'РџРѕРґС‚РІРµСЂРґРёС‚СЊ РІС‹РґР°С‡Сѓ'}
+          {isIssued ? 'Заявка уже обработана' : 'Подтвердить выдачу'}
         </Button>
       </div>
 

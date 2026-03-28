@@ -1,3 +1,5 @@
+﻿import { handleExpiredSession } from '../lib/sessionExpiration'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8000'
 
 interface RequestOptions extends RequestInit {
@@ -34,6 +36,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   })
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      handleExpiredSession(path)
+    }
+
     throw new ApiError(await getErrorMessage(response), response.status)
   }
 

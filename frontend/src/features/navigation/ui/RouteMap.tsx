@@ -149,9 +149,6 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
         <div className="space-y-1">
           <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#0f5238]">Навигация</p>
           <h2 className="text-xl font-extrabold tracking-tight text-[#1a1c1a]">Живая карта маршрута</h2>
-          <p className="text-sm text-[#5a645d]">
-            {isRouteLoading ? 'Маршрут по дорогам перестраивается...' : 'Пешеходный маршрут строится по дорожной сети.'}
-          </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

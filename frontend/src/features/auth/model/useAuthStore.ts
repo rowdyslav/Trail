@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+﻿import { create } from 'zustand'
 import { mockUser } from '../../../entities/quest/model/mockData'
 import { authApi, type UserProfileRead } from '../api/authApi'
 import type { UserProfile } from '../../../shared/types/game'
@@ -53,6 +53,7 @@ const mapApiUserToProfile = (apiUser: UserProfileRead, previousUser: UserProfile
   email: apiUser.email,
   name: getDisplayNameFromEmail(apiUser.email),
   streakDays: apiUser.streak_days,
+  streakKey: apiUser.streak_key,
   rewardPointsBalance: apiUser.reward_points,
 })
 
@@ -181,3 +182,4 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }))
   },
 }))
+

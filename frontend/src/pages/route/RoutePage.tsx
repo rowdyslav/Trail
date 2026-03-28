@@ -1,4 +1,4 @@
-import { MdCheckCircle, MdChevronRight, MdCloudDownload, MdLock, MdRadioButtonChecked } from 'react-icons/md'
+import { MdCheckCircle, MdChevronRight, MdLock, MdRadioButtonChecked } from 'react-icons/md'
 import { RouteMap } from '../../features/navigation/ui/RouteMap'
 import type { Landmark } from '../../shared/types/game'
 
@@ -49,11 +49,6 @@ export function RoutePage() {
 
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#e2e3df]">
           <div className="h-full w-[60%] rounded-full bg-[#0f5238] shadow-[0_0_12px_rgba(15,82,56,0.2)]" />
-        </div>
-
-        <div className="flex w-fit items-center gap-2 rounded-full border border-[#bfc9c1]/20 bg-[#f3f4f0] px-3 py-1.5">
-          <MdCloudDownload className="text-[16px] text-[#0f5238]" />
-          <span className="text-xs font-semibold text-[#404943]">Автономный режим активен</span>
         </div>
       </section>
 

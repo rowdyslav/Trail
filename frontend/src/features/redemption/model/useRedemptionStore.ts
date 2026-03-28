@@ -19,6 +19,12 @@ interface RedemptionResult {
   error?: string
 }
 
+interface CancelRedemptionResult {
+  success: boolean
+  request?: RedemptionRequest
+  error?: string
+}
+
 interface RedemptionStoreState {
   prizeCatalog: PrizeCatalogItem[]
   redemptions: RedemptionRequest[]
@@ -30,6 +36,7 @@ interface RedemptionStoreState {
   hydrateActiveRedemptions: (profile: UserProfileRead | null) => void
   clearRedemptionData: () => void
   createRedemptionRequest: (payload: CreateRedemptionPayload) => Promise<RedemptionResult>
+  cancelCurrentRedemption: () => Promise<CancelRedemptionResult>
   getActiveRedemptionForCurrentUser: () => RedemptionRequest | null
   getRedemptionById: (id: string) => RedemptionRequest | null
   findRedemptionByCode: (code: string) => RedemptionRequest | null
@@ -192,6 +199,48 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Could not create redemption code.',
+      }
+    }
+  },
+  cancelCurrentRedemption: async () => {
+    const authState = useAuthStore.getState()
+    const token = authState.authToken
+    const activeRequest = get().redemptions.find(
+      (redemption) => redemption.userId === authState.user.id && redemption.status === 'active',
+    )
+
+    if (!token) {
+      return { success: false, error: 'Требуется авторизация.' }
+    }
+
+    if (!activeRequest) {
+      return { success: false, error: 'Активный код выдачи не найден.' }
+    }
+
+    try {
+      const cancelledRequest = await redemptionsApi.cancel(token, activeRequest.code)
+      const normalizedRequest = {
+        ...cancelledRequest,
+        userId: authState.user.id,
+        userName: authState.user.name,
+      }
+
+      authState.updateUser((user) => ({
+        ...user,
+        rewardPointsBalance: user.rewardPointsBalance + normalizedRequest.totalPoints,
+      }))
+
+      set((state) => ({
+        redemptions: state.redemptions.map((redemption) =>
+          normalizeCode(redemption.code) === normalizeCode(normalizedRequest.code) ? normalizedRequest : redemption,
+        ),
+      }))
+
+      return { success: true, request: normalizedRequest }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Could not cancel redemption code.',
       }
     }
   },

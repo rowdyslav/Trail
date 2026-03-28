@@ -1,6 +1,7 @@
-export type CheckpointStatus = 'locked' | 'available' | 'completed'
+﻿export type CheckpointStatus = 'locked' | 'available' | 'completed'
 export type RouteAccessType = 'free' | 'paid'
 export type RedemptionRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
+export type StreakKey = 'novice' | 'explorer' | 'traveler' | 'pathfinder' | 'legend'
 
 export interface Reward {
   title: string
@@ -132,7 +133,9 @@ export interface UserProfile {
   xp: number
   rewardPointsBalance: number
   streakDays: number
+  streakKey: StreakKey
   nextLevelXp: number
   avatarStage: number
   badges: Badge[]
 }
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
@@ -14,11 +14,12 @@ export function AuthPage() {
   const registerUser = useAuthStore((state) => state.registerUser)
   const hydrateActiveRedemptions = useRedemptionStore((state) => state.hydrateActiveRedemptions)
   const fetchPrizeCatalog = useRedemptionStore((state) => state.fetchPrizeCatalog)
-  const [mode, setMode] = useState<AuthMode>('login')
+  const [mode, setMode] = useState<AuthMode>(searchParams.get('mode') === 'register' ? 'register' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const nextPath = searchParams.get('next') || '/profile'
+  const isSessionExpired = searchParams.get('reason') === 'expired'
 
   if (authToken) {
     return <Navigate to={nextPath} replace />
@@ -80,6 +81,12 @@ export function AuthPage() {
         </div>
 
         <div className="mt-6 space-y-4">
+          {isSessionExpired ? (
+            <div className="rounded-[1rem] border border-[#f0d7a6] bg-[#fff8e8] px-4 py-3 text-sm font-medium text-[#7a5a12]">
+              Срок действия сессии истёк. Зарегистрируйтесь снова, чтобы продолжить.
+            </div>
+          ) : null}
+
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-[#404943]">Email</span>
             <input

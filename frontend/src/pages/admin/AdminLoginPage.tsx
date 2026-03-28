@@ -1,18 +1,20 @@
-import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
-import { useAdminStore } from '../../features/admin/model/useAdminStore'
+﻿import {useState} from 'react'
+import {Navigate, useNavigate, useSearchParams} from 'react-router-dom'
+import {useAdminStore} from '../../features/admin/model/useAdminStore'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const adminSession = useAdminStore((state) => state.adminSession)
   const loginAdmin = useAdminStore((state) => state.loginAdmin)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isSessionExpired = searchParams.get('reason') === 'expired'
 
   if (adminSession) {
-    return <Navigate to="/admin/redemptions" replace />
+    return <Navigate to="/admin/redemptions" replace/>
   }
 
   return (
@@ -40,6 +42,14 @@ export function AdminLoginPage() {
             navigate('/admin/redemptions')
           }}
         >
+          {isSessionExpired &&
+            <div
+              className="rounded-[1rem] border border-[#f0d7a6] bg-[#fff8e8] px-4 py-3 text-sm font-medium text-[#7a5a12]"
+            >
+              Срок действия админской сессии истёк. Войдите снова, чтобы продолжить.
+            </div>
+          }
+
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-[#404943]">Email</span>
             <input

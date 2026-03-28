@@ -1,13 +1,28 @@
-import { Link, Navigate, useParams } from 'react-router-dom'
+﻿import { useState } from 'react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
+import { Button } from '../../shared/ui/Button'
 
 export function RedeemResultPage() {
+  const navigate = useNavigate()
   const { requestId = '' } = useParams()
   const request = useRedemptionStore((state) => state.getRedemptionById(requestId))
+  const cancelCurrentRedemption = useRedemptionStore((state) => state.cancelCurrentRedemption)
   const isActive = request?.status === 'active'
+  const [isCancelling, setIsCancelling] = useState(false)
 
   if (!request) {
     return <Navigate to="/redeem" replace />
+  }
+
+  const handleCancel = async () => {
+    setIsCancelling(true)
+    const result = await cancelCurrentRedemption()
+    setIsCancelling(false)
+
+    if (result.success) {
+      navigate('/redeem', { replace: true })
+    }
   }
 
   return (
@@ -67,6 +82,11 @@ export function RedeemResultPage() {
         >
           Создать новый код
         </Link>
+        {isActive ? (
+          <Button variant="secondary" onClick={() => void handleCancel()} disabled={isCancelling}>
+            {isCancelling ? 'Удаляем код...' : 'Удалить текущий код'}
+          </Button>
+        ) : null}
       </div>
     </main>
   )

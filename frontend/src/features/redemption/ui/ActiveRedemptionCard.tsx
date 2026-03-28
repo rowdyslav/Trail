@@ -1,8 +1,11 @@
-import { Link } from 'react-router-dom'
-import type { RedemptionRequest } from '../../../shared/types/game'
+﻿import {Link} from 'react-router-dom'
+import {Button} from '../../../shared/ui/Button'
+import type {RedemptionRequest} from '../../../shared/types/game'
 
 interface ActiveRedemptionCardProps {
   request: RedemptionRequest
+  isCancelling?: boolean
+  onCancel?: () => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -12,7 +15,7 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 })
 
-export function ActiveRedemptionCard({ request }: ActiveRedemptionCardProps) {
+export function ActiveRedemptionCard({request, isCancelling = false, onCancel}: ActiveRedemptionCardProps) {
   return (
     <section className="rounded-[2rem] bg-[#0f5238] p-6 text-white shadow-[0_20px_50px_rgba(15,82,56,0.18)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -33,7 +36,7 @@ export function ActiveRedemptionCard({ request }: ActiveRedemptionCardProps) {
         {request.items.map((item) => (
           <div key={item.prizeId} className="flex items-center justify-between gap-4 text-sm">
             <span>
-              {item.titleSnapshot} × {item.quantity}
+              {item.titleSnapshot} x {item.quantity}
             </span>
             <span className="font-bold">{item.totalPoints} баллов</span>
           </div>
@@ -47,12 +50,17 @@ export function ActiveRedemptionCard({ request }: ActiveRedemptionCardProps) {
         >
           Открыть код
         </Link>
-        <Link
-          to="/redeem"
-          className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 text-sm font-bold text-white"
-        >
-          Посмотреть каталог призов
-        </Link>
+
+        {onCancel &&
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            disabled={isCancelling}
+            className="border border-white/20 text-white hover:bg-white/10"
+          >
+            {isCancelling ? 'Удаляем код...' : 'Удалить текущий код'}
+          </Button>
+        }
       </div>
     </section>
   )
