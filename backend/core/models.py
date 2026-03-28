@@ -145,7 +145,7 @@ class WalkScans(Document):
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     class Settings:
-        name = "walk_point_scans"
+        name = "walk_scans"
         indexes = [
             IndexModel([("user_id", 1), ("route_id", 1), ("place_id", 1)], unique=True),
             IndexModel([("user_id", 1), ("route_id", 1)]),
