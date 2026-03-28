@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .types import AssistantScenario
 
-
 REACTION_STYLE_GUIDE = (
     "Пиши только по-русски. Реплика должна коротко поддерживать пользователя. "
     "Без фактов о месте, без длинных образов. "

@@ -1,4 +1,4 @@
-import asyncio
+import logging
 from datetime import datetime
 
 from beanie import PydanticObjectId
@@ -38,10 +38,10 @@ from core.domain.routes import (
 )
 from core.domain.streaks import calculate_streak_days
 from core.models import Place, Route, Walk, WalkScans
-from env import ENV
-from utils.ai import AssistantService
+from utils.ai import DeepSeekService
 
 router = APIRouter(tags=["Scan"])
+logger = logging.getLogger(__name__)
 
 
 def build_ai_fallback(place_title: str, route_title: str) -> str:
@@ -52,16 +52,20 @@ def build_ai_fallback(place_title: str, route_title: str) -> str:
 
 
 async def generate_scan_ai_fact(place_title: str, route_title: str) -> tuple[str, bool]:
-    assistant = AssistantService()
+    assistant = DeepSeekService()
     try:
-        fact = await asyncio.wait_for(
-            assistant.generate_scan_success_message(
-                place_name=place_title,
-                description=f"Route point: {route_title}",
-            ),
-            timeout=min(ENV.deepseek_timeout_seconds, 3.0),
+        fact = await assistant.generate_scan_success_message(
+            place_name=place_title,
+            description=f"Route point: {route_title}",
         )
     except Exception:
+        logger.exception(
+            "Falling back for scan AI fact",
+            extra={
+                "place_title": place_title,
+                "route_title": route_title,
+            },
+        )
         return build_ai_fallback(place_title, route_title), True
     return fact, False
 

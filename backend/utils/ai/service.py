@@ -14,7 +14,6 @@ from .prompts import (
 )
 from .types import AssistantEventType, AssistantScenario, AvatarReactionMap
 
-
 AvatarReactionGenerator = Callable[
     [str | None, str | None, str | None],
     Awaitable[str],
@@ -37,7 +36,7 @@ def build_context_prompt(
     return "\n".join(prompt_parts)
 
 
-class AssistantService:
+class DeepSeekService:
     def __init__(self, client: DeepSeekClient | None = None) -> None:
         self.client = client or DeepSeekClient()
 
@@ -86,7 +85,7 @@ class AssistantService:
         *,
         place_name: str,
         description: str | None = None,
-    ) -> "asyncio.Task[str]":
+    ) -> asyncio.Task[str]:
         return asyncio.create_task(
             self.generate_fact(place_name=place_name, description=description)
         )
