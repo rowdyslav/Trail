@@ -117,6 +117,9 @@ class ScanRewardPointsRead(BaseModel):
 class ScanAIRead(BaseModel):
     fact: str
     fallback: bool
+    scan_reaction: str | None = None
+    streak_reaction: str | None = None
+    level_up_reaction: str | None = None
 
 
 class CodePrizeSelection(BaseModel):

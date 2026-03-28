@@ -25,10 +25,10 @@ class User(PasswordMixin, Document):
     email: Annotated[EmailStr, Indexed(unique=True)]
     hashed_password: str
     is_active: bool = True
+    # Legacy field name kept for API compatibility; now stores completed routes count.
     streak_days: int = 0
     streak_key: StreakKey = StreakKey.NOVICE
     reward_points: int = 0
-    last_completed_at: datetime | None = None
     active_route_id: PydanticObjectId | None = None
     purchased_route_ids: list[PydanticObjectId] = Field(default_factory=list)
 

@@ -37,6 +37,9 @@ interface ScanRewardPointsRead {
 interface ScanAIRead {
   fact: string
   fallback: boolean
+  scan_reaction?: string | null
+  streak_reaction?: string | null
+  level_up_reaction?: string | null
 }
 
 export interface ScanActivationResponse {

@@ -6,6 +6,8 @@ import { useRouteProgressStore } from '../../features/game/model/useRouteProgres
 import { routeShowcaseImages } from '../../features/navigation/lib/routeImage'
 
 const heroFallbackImage = '/img/photo/kremlin.jpg'
+const HERO_SLIDE_INTERVAL_MS = Math.round(4800 / 1.75)
+const HERO_FADE_DURATION_MS = Math.round(1400 / 1.75)
 
 export function HomePage() {
   const savedRoute = useRouteProgressStore((state) => state.savedRoute)
@@ -43,7 +45,7 @@ export function HomePage() {
 
     const timer = window.setInterval(() => {
       setHeroSlideIndex((currentIndex) => (currentIndex + 1) % animatedHeroImages.length)
-    }, 4800)
+    }, HERO_SLIDE_INTERVAL_MS)
 
     return () => window.clearInterval(timer)
   }, [animatedHeroImages.length, shouldAnimateHero])
@@ -103,9 +105,10 @@ export function HomePage() {
                 animatedHeroImages.map((image, index) => (
                   <img
                     key={image}
-                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-in-out ${
+                    className={`absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out ${
                       index === heroSlideIndex ? 'opacity-100' : 'opacity-0'
                     }`}
+                    style={{ transitionDuration: `${HERO_FADE_DURATION_MS}ms` }}
                     src={image}
                     alt={heroAlt}
                   />

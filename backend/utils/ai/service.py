@@ -10,6 +10,8 @@ from .prompts import (
     FACT_SYSTEM_PROMPT,
     LEVEL_UP_SCENARIO,
     REACTION_STYLE_GUIDE,
+    ROUTE_COMPLETION_SCENARIO,
+    SCAN_SUCCESS_SCENARIO,
     STREAK_SCENARIO,
 )
 from .types import AssistantEventType, AssistantScenario, AvatarReactionMap
@@ -50,7 +52,8 @@ class DeepSeekService:
         description: str | None = None,
     ) -> str:
         if not place_name or not place_name.strip():
-            raise ValueError("place_name is required")
+            message = "place_name is required"
+            raise ValueError(message)
 
         effective_description = description or get_place_description(place_name)
         fallback = self._fallback_from_description(effective_description)
@@ -58,7 +61,8 @@ class DeepSeekService:
         if not self.is_configured():
             if fallback:
                 return fallback
-            raise RuntimeError("DeepSeek is not configured")
+            message = "DeepSeek is not configured"
+            raise RuntimeError(message)
 
         try:
             text = await self.client.generate_text(
@@ -78,7 +82,8 @@ class DeepSeekService:
             return cleaned
         if fallback:
             return fallback
-        raise ValueError("DeepSeek returned empty fact")
+        message = "DeepSeek returned empty fact"
+        raise ValueError(message)
 
     def generate_fact_in_background(
         self,
@@ -86,6 +91,7 @@ class DeepSeekService:
         place_name: str,
         description: str | None = None,
     ) -> asyncio.Task[str]:
+        """NOT_IMPLMNT: reserved helper, currently unused in app flows."""
         return asyncio.create_task(
             self.generate_fact(place_name=place_name, description=description)
         )
@@ -99,6 +105,16 @@ class DeepSeekService:
         return await self.generate_fact(
             place_name=place_name,
             description=description,
+        )
+
+    async def generate_route_completion_message(
+        self,
+        *,
+        extra_context: str | None = None,
+    ) -> str:
+        return await self._generate_event_message(
+            ROUTE_COMPLETION_SCENARIO,
+            extra_context=extra_context,
         )
 
     async def generate_level_up_message(
@@ -126,6 +142,7 @@ class DeepSeekService:
         *,
         extra_context: str | None = None,
     ) -> str:
+        """NOT_IMPLMNT: reserved helper, currently unused in app flows."""
         return await self._generate_event_message(
             APP_RETURN_SCENARIO,
             extra_context=extra_context,
@@ -156,12 +173,13 @@ class DeepSeekService:
         place_name: str | None = None,
         description: str | None = None,
     ) -> AvatarReactionMap:
+        """NOT_IMPLMNT: reserved helper, currently unused in app flows."""
         return AvatarReactionMap(
             on_scan_success=await self.generate_avatar_reaction(
                 event_type="on_scan_success",
                 place_name=place_name,
                 description=description,
-                extra_context="Пользователь только что успешно отсканировал точку маршрута.",
+                extra_context=SCAN_SUCCESS_SCENARIO.default_extra_context,
             ),
             on_level_up=await self.generate_avatar_reaction(
                 event_type="on_level_up",
@@ -187,13 +205,22 @@ class DeepSeekService:
         self,
         place_name: str | None,
         description: str | None,
-        _extra_context: str | None,
+        extra_context: str | None,
     ) -> str:
         if not place_name or not place_name.strip():
-            raise ValueError("place_name is required for on_scan_success")
-        return await self.generate_scan_success_message(
-            place_name=place_name,
-            description=description,
+            message = "place_name is required for on_scan_success"
+            raise ValueError(message)
+        reaction_context = (
+            f"{extra_context.strip()} Точка: {place_name.strip()}."
+            if extra_context and extra_context.strip()
+            else f"Точка: {place_name.strip()}."
+        )
+        if description and description.strip():
+            route_context = f"Контекст маршрута: {description.strip()}."
+            reaction_context = f"{reaction_context} {route_context}"
+        return await self._generate_event_message(
+            SCAN_SUCCESS_SCENARIO,
+            extra_context=reaction_context,
         )
 
     async def _generate_level_up_reaction(
@@ -227,7 +254,8 @@ class DeepSeekService:
         extra_context: str | None,
     ) -> str:
         if not self.is_configured():
-            raise RuntimeError("DeepSeek is not configured")
+            message = "DeepSeek is not configured"
+            raise RuntimeError(message)
 
         text = await self.client.generate_text(
             system_prompt=f"{scenario.system_description} {REACTION_STYLE_GUIDE}",
@@ -255,7 +283,8 @@ class DeepSeekService:
             f"Название точки: {place_name.strip()}\n"
             f"{description_block}"
             "Сделай текст естественным и легко читаемым. "
-            "Если знаешь точную эпоху, век или дату основания/строительства, аккуратно укажи это."
+            "Если знаешь точную эпоху, век или дату "
+            "основания/строительства, аккуратно укажи это."
         )
 
     @staticmethod

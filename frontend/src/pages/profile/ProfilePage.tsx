@@ -99,7 +99,7 @@ export function ProfilePage() {
           <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">{user.title}</h2>
           <div className="flex items-center justify-center gap-2 font-bold text-[#0f5238]">
             <MdLocalFireDepartment className="text-2xl" />
-            <span className="text-lg tracking-wide">Серия: {user.streakDays} дней</span>
+            <span className="text-lg tracking-wide">Серия: {user.streakDays}</span>
           </div>
         </div>
       </section>

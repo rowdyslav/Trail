@@ -4,7 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useActivatePoint } from '../../features/scan/model/useActivatePoint'
 import { avatarByStreakKey } from '../../shared/lib/avatarByStreakKey'
-import { getMushroomReactionByStreakKey } from '../../shared/lib/mushroomReactionByStreakKey'
+import { streakTitleByKey } from '../../shared/lib/streakTitleByKey'
 import { Button } from '../../shared/ui/Button'
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -67,6 +67,7 @@ export function ActivatePointPage() {
 
     updateUser((currentUser) => ({
       ...currentUser,
+      title: streakTitleByKey[activationData.avatar.state] ?? streakTitleByKey.novice,
       streakDays: activationData.streak.days,
       streakKey: activationData.avatar.state,
       rewardPointsBalance: activationData.reward_points.total_balance,
@@ -90,7 +91,19 @@ export function ActivatePointPage() {
 
   const currentMushroomKey = data?.avatar.state ?? user.streakKey
   const currentMushroomAvatar = avatarByStreakKey[currentMushroomKey] ?? avatarByStreakKey.novice
-  const mushroomReaction = data?.avatar.changed ? getMushroomReactionByStreakKey(data.avatar.state) : null
+  const mushroomReaction = data?.route_progress.is_completed
+    ? (
+        data.ai.scan_reaction ??
+        data.ai.level_up_reaction ??
+        data.ai.streak_reaction ??
+        null
+      )
+    : (
+        data?.ai.level_up_reaction ??
+        data?.ai.streak_reaction ??
+        data?.ai.scan_reaction ??
+        null
+      )
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-170px)] max-w-3xl items-center px-4 pb-28 pt-8 sm:px-6">
@@ -131,7 +144,7 @@ export function ActivatePointPage() {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-[1.5rem] bg-[#f4f7f1] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Текущая серия</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Серия</p>
                   <p className="mt-2 text-2xl font-black text-[#0f5238]">{data.streak.days}</p>
                 </div>
                 <div className="rounded-[1.5rem] bg-[#f4f7f1] p-4">

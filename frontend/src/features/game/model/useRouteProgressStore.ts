@@ -35,7 +35,7 @@ const fallbackRoute: RouteDetails = {
   image: '',
   accessType: 'free',
   priceRub: 0,
-  priceLabel: 'Free',
+  priceLabel: 'Бесплатно',
   isPurchased: false,
   isActive: false,
   isCompleted: false,

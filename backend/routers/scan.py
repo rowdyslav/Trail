@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from beanie import PydanticObjectId
@@ -36,7 +37,7 @@ from core.domain.routes import (
     mark_walk_completed,
     now_utc,
 )
-from core.domain.streaks import calculate_streak_days
+from core.domain.streaks import increment_streak_days
 from core.models import Place, Route, Walk, WalkScans
 from utils.ai import DeepSeekService
 
@@ -68,6 +69,17 @@ async def generate_scan_ai_fact(place_title: str, route_title: str) -> tuple[str
         )
         return build_ai_fallback(place_title, route_title), True
     return fact, False
+
+
+async def generate_ai_reaction(
+    *,
+    generator: Callable[[], Awaitable[str]],
+) -> str | None:
+    try:
+        return await generator()
+    except Exception:
+        logger.exception("Falling back for AI reaction")
+        return None
 
 
 def create_scan_response(
@@ -130,7 +142,10 @@ async def build_duplicate_response(
             completion_bonus_gained=0,
             total_balance=me.reward_points,
         ),
-        ai=ScanAIRead(fact=ai_fact, fallback=ai_fallback),
+        ai=ScanAIRead(
+            fact=ai_fact,
+            fallback=ai_fallback,
+        ),
         completed_at=completed_at,
     )
 
@@ -213,14 +228,6 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             completed_at=None if scan is None else scan.completed_at,
         )
 
-    me.streak_days = calculate_streak_days(
-        current_streak_days=me.streak_days,
-        last_completed_at=me.last_completed_at,
-        now=completed_at,
-    )
-    me.sync_streak_key()
-    me.last_completed_at = completed_at
-
     if place.id not in walk.scanned_place_ids:
         walk.scanned_place_ids.append(place.id)
 
@@ -236,12 +243,55 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             walk=walk,
             completed_at=completed_at,
         )
+        me.streak_days = increment_streak_days(me.streak_days)
+        me.sync_streak_key()
 
     await walk.save()
     await me.save()
 
     walk_progress_raw = build_walk_progress(route, walk)
+    route_completed_now = (
+        completion_bonus_gained > 0 or walk_progress_raw["is_completed"]
+    )
     ai_fact, ai_fallback = await generate_scan_ai_fact(place.title, route.title)
+    ai = DeepSeekService()
+    if route_completed_now:
+        scan_reaction = await generate_ai_reaction(
+            generator=lambda: ai.generate_route_completion_message(
+                extra_context=(
+                    f"Пользователь полностью завершил маршрут {route.title}. "
+                    f"Последняя точка маршрута: {place.title}."
+                )
+            )
+        )
+    else:
+        scan_reaction = await generate_ai_reaction(
+            generator=lambda: ai.generate_avatar_reaction(
+                event_type="on_scan_success",
+                place_name=place.title,
+                description=f"Route point: {route.title}",
+            )
+        )
+    streak_reaction = None
+    if me.streak_days != previous_streak_days:
+        streak_reaction = await generate_ai_reaction(
+            generator=lambda: ai.generate_streak_message(
+                extra_context=(
+                    f"Пользователь полностью завершил маршрут {route.title}. "
+                    f"Серия завершённых маршрутов теперь {me.streak_days}."
+                )
+            )
+        )
+    level_up_reaction = None
+    if me.streak_key != previous_avatar_state:
+        level_up_reaction = await generate_ai_reaction(
+            generator=lambda: ai.generate_level_up_message(
+                extra_context=(
+                    f"Пользователь полностью завершил маршрут {route.title}. "
+                    f"Новый уровень грибного аватара: {me.streak_key}."
+                )
+            )
+        )
     return create_scan_response(
         status="success",
         message="Point activated successfully",
@@ -266,6 +316,12 @@ async def scan_qr(me: CurrentUser, data: ScanRequest) -> ScanResponse:
             completion_bonus_gained=completion_bonus_gained,
             total_balance=me.reward_points,
         ),
-        ai=ScanAIRead(fact=ai_fact, fallback=ai_fallback),
+        ai=ScanAIRead(
+            fact=ai_fact,
+            fallback=ai_fallback,
+            scan_reaction=scan_reaction,
+            streak_reaction=streak_reaction if route_completed_now else None,
+            level_up_reaction=level_up_reaction if route_completed_now else None,
+        ),
         completed_at=scan.completed_at,
     )

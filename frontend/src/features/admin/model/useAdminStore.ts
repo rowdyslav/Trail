@@ -2,8 +2,10 @@ import { create } from 'zustand'
 import { adminAuthApi } from '../../auth/api/adminAuthApi'
 import type { AuthResult } from '../../auth/model/useAuthStore'
 
-const ADMIN_TOKEN_STORAGE_KEY = 'trail.admin.token'
-const ADMIN_EMAIL_STORAGE_KEY = 'trail.admin.email'
+const ADMIN_TOKEN_STORAGE_KEY = 'Trail.admin.token'
+const ADMIN_EMAIL_STORAGE_KEY = 'Trail.admin.email'
+const LEGACY_ADMIN_TOKEN_STORAGE_KEY = 'trail.admin.token'
+const LEGACY_ADMIN_EMAIL_STORAGE_KEY = 'trail.admin.email'
 
 interface AdminSession {
   email: string
@@ -21,8 +23,12 @@ const getStoredAdminSession = (): AdminSession | null => {
     return null
   }
 
-  const token = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)
-  const email = window.localStorage.getItem(ADMIN_EMAIL_STORAGE_KEY)
+  const token =
+    window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ??
+    window.localStorage.getItem(LEGACY_ADMIN_TOKEN_STORAGE_KEY)
+  const email =
+    window.localStorage.getItem(ADMIN_EMAIL_STORAGE_KEY) ??
+    window.localStorage.getItem(LEGACY_ADMIN_EMAIL_STORAGE_KEY)
 
   if (!token || !email) {
     return null
@@ -39,11 +45,15 @@ const setStoredAdminSession = (session: AdminSession | null) => {
   if (session) {
     window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, session.token)
     window.localStorage.setItem(ADMIN_EMAIL_STORAGE_KEY, session.email)
+    window.localStorage.removeItem(LEGACY_ADMIN_TOKEN_STORAGE_KEY)
+    window.localStorage.removeItem(LEGACY_ADMIN_EMAIL_STORAGE_KEY)
     return
   }
 
   window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY)
   window.localStorage.removeItem(ADMIN_EMAIL_STORAGE_KEY)
+  window.localStorage.removeItem(LEGACY_ADMIN_TOKEN_STORAGE_KEY)
+  window.localStorage.removeItem(LEGACY_ADMIN_EMAIL_STORAGE_KEY)
 }
 
 export const useAdminStore = create<AdminState>((set) => ({

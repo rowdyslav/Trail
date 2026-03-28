@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import { authApi, type UserProfileRead } from '../api/authApi'
 import type { UserProfile } from '../../../shared/types/game'
+import { streakTitleByKey } from '../../../shared/lib/streakTitleByKey'
 
-const AUTH_TOKEN_STORAGE_KEY = 'trail.auth.token'
+const AUTH_TOKEN_STORAGE_KEY = 'Trail.auth.token'
+const LEGACY_AUTH_TOKEN_STORAGE_KEY = 'trail.auth.token'
 
 export interface AuthResult {
   success: boolean
@@ -28,7 +30,10 @@ const getStoredToken = () => {
     return null
   }
 
-  return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+  return (
+    window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) ??
+    window.localStorage.getItem(LEGACY_AUTH_TOKEN_STORAGE_KEY)
+  )
 }
 
 const setStoredToken = (token: string | null) => {
@@ -38,17 +43,19 @@ const setStoredToken = (token: string | null) => {
 
   if (token) {
     window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token)
+    window.localStorage.removeItem(LEGACY_AUTH_TOKEN_STORAGE_KEY)
     return
   }
 
   window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
+  window.localStorage.removeItem(LEGACY_AUTH_TOKEN_STORAGE_KEY)
 }
 
 const emptyUser: UserProfile = {
   id: '',
   email: undefined,
   name: 'Гость',
-  title: 'Путешественник',
+  title: streakTitleByKey.novice,
   rewardPointsBalance: 0,
   streakDays: 0,
   streakKey: 'novice',
@@ -63,6 +70,7 @@ const mapApiUserToProfile = (apiUser: UserProfileRead, previousUser: UserProfile
   id: apiUser.id,
   email: apiUser.email,
   name: getDisplayNameFromEmail(apiUser.email),
+  title: streakTitleByKey[apiUser.streak_key] ?? streakTitleByKey.novice,
   streakDays: apiUser.streak_days,
   streakKey: apiUser.streak_key,
   rewardPointsBalance: apiUser.reward_points,

@@ -139,19 +139,19 @@ DEMO_ROUTES = (
 
 DEMO_PRIZES = (
     {
-        "title": "Кружка Trail",
+        "title": "Кружка Тропа",
         "description": "Фирменная керамическая кружка.",
         "points_cost": 120,
         "is_active": True,
     },
     {
-        "title": "Шоппер Trail",
+        "title": "Шоппер Тропа",
         "description": "Многоразовая фирменная сумка для прогулок и поездок.",
         "points_cost": 180,
         "is_active": True,
     },
     {
-        "title": "Набор стикеров Trail",
+        "title": "Набор стикеров Тропа",
         "description": "Небольшой набор фирменных наклеек.",
         "points_cost": 60,
         "is_active": True,
