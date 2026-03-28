@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Annotated
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Query
@@ -22,7 +23,7 @@ from core.api.schemas import (
     RouteSelectionRead,
     RouteViewerStateRead,
 )
-from core.deps import CurrentUser
+from core.deps import CurrentUser, CurrentUserOptional
 from core.domain.rewards import RouteType
 from core.domain.routes import (
     build_route_read,
@@ -31,8 +32,10 @@ from core.domain.routes import (
     get_route_or_404,
     get_user_progress,
     get_user_purchase,
+    has_route_access,
+    sync_confirmed_route_purchase,
 )
-from core.models import Route, RoutePurchase
+from core.models import Route, RoutePurchase, UserRouteProgress
 from utils.payment_processor import PaymentProcessor
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
@@ -46,11 +49,42 @@ def get_payment_processor() -> PaymentProcessor:
     "",
 )
 async def read_routes(
-    route_type: RouteType | None = Query(default=None),
+    me: CurrentUserOptional = None,
+    route_type: Annotated[RouteType | None, Query()] = None,
 ) -> list[RouteRead]:
     filters = {} if route_type is None else {"route_type": route_type}
     routes = await Route.find(filters, fetch_links=True).to_list()
-    return [build_route_read(route) for route in routes]
+    if me is None:
+        return [build_route_read(route) for route in routes]
+
+    route_ids = [route.id for route in routes]
+    progresses = await UserRouteProgress.find(
+        {"user_id": me.id, "route_id": {"$in": route_ids}}
+    ).to_list()
+    purchases = await RoutePurchase.find(
+        {"user_id": me.id, "route_id": {"$in": route_ids}}
+    ).to_list()
+
+    progress_by_route_id = {progress.route_id: progress for progress in progresses}
+    purchase_by_route_id = {purchase.route_id: purchase for purchase in purchases}
+
+    user_changed = False
+    for purchase in purchases:
+        if purchase.is_confirmed():
+            synced = sync_confirmed_route_purchase(me, purchase.route_id)
+            user_changed = synced or user_changed
+    if user_changed:
+        await me.save()
+
+    return [
+        build_route_read(
+            route,
+            me,
+            progress=progress_by_route_id.get(route.id),
+            purchase=purchase_by_route_id.get(route.id),
+        )
+        for route in routes
+    ]
 
 
 @router.get(
@@ -59,7 +93,9 @@ async def read_routes(
 )
 async def read_route_viewer_states(me: CurrentUser) -> list[RouteViewerStateRead]:
     routes = await Route.find({}, fetch_links=True).to_list()
-    return await build_route_viewer_states_for_user(routes, me)
+    states = await build_route_viewer_states_for_user(routes, me)
+    await me.save()
+    return states
 
 
 @router.get(
@@ -71,7 +107,9 @@ async def read_route_viewer_state(
     route_id: PydanticObjectId,
 ) -> RouteViewerStateRead:
     route = await get_route_or_404(route_id)
-    return await build_route_viewer_state_for_user(route, me)
+    state = await build_route_viewer_state_for_user(route, me)
+    await me.save()
+    return state
 
 
 @router.get(
@@ -92,16 +130,19 @@ async def read_route(route_id: PydanticObjectId) -> RouteRead:
         route_already_completed_error,
     ),
 )
-async def select_route(me: CurrentUser, route_id: PydanticObjectId) -> RouteSelectionRead:
+async def select_route(
+    me: CurrentUser,
+    route_id: PydanticObjectId,
+) -> RouteSelectionRead:
     route = await get_route_or_404(route_id)
     progress = await get_user_progress(me.id, route.id)
     if progress is not None and progress.is_completed:
         raise route_already_completed_error
 
     purchase = await get_user_purchase(me.id, route.id)
-    if route.route_type == RouteType.PAID and (
-        purchase is None or not purchase.is_confirmed()
-    ):
+    if purchase is not None and purchase.is_confirmed():
+        sync_confirmed_route_purchase(me, route.id)
+    if not has_route_access(route, me, purchase=purchase):
         raise route_not_purchased_error
 
     me.active_route_id = route.id
@@ -133,6 +174,8 @@ async def purchase_route(
 
     purchase = await get_user_purchase(me.id, route.id)
     if purchase is not None and purchase.is_confirmed():
+        sync_confirmed_route_purchase(me, route.id)
+        await me.save()
         return purchase.to_read()
 
     processor = get_payment_processor()
@@ -151,6 +194,9 @@ async def purchase_route(
             payment_status=payment["status"],
             amount_rub=route.price_rub,
             purchased_at=datetime.now(UTC),
+            confirmed_at=(
+                datetime.now(UTC) if payment["status"] == "succeeded" else None
+            ),
         ).insert()
     else:
         purchase.payment_id = payment["payment_id"]
@@ -158,7 +204,13 @@ async def purchase_route(
         purchase.amount_rub = route.price_rub
         purchase.purchased_at = datetime.now(UTC)
         purchase.confirmed_at = None
+        if payment["status"] == "succeeded":
+            purchase.confirmed_at = datetime.now(UTC)
         await purchase.save()
+
+    if purchase.is_confirmed():
+        sync_confirmed_route_purchase(me, route.id)
+        await me.save()
 
     return purchase.to_read(confirmation_url=payment["confirmation_url"])
 
@@ -188,7 +240,9 @@ async def confirm_route_purchase(
 
     if payment_status == "succeeded":
         purchase.confirmed_at = purchase.confirmed_at or datetime.now(UTC)
+        sync_confirmed_route_purchase(me, route_id)
         await purchase.save()
+        await me.save()
         return purchase.to_read()
 
     await purchase.save()
@@ -199,7 +253,11 @@ async def confirm_route_purchase(
 
 @router.delete(
     "/active",
-    responses=ber(unauthorized_error, active_route_not_selected_error, route_not_active_error),
+    responses=ber(
+        unauthorized_error,
+        active_route_not_selected_error,
+        route_not_active_error,
+    ),
 )
 async def clear_active_route(me: CurrentUser) -> RouteSelectionRead:
     if me.active_route_id is None:

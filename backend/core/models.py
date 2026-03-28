@@ -31,6 +31,7 @@ class User(PasswordMixin, Document):
     reward_points: int = 0
     last_completed_at: datetime | None = None
     active_route_id: PydanticObjectId | None = None
+    purchased_route_ids: list[PydanticObjectId] = Field(default_factory=list)
 
     class Settings:
         name = "users"
@@ -129,6 +130,7 @@ class Route(Document):
         return RouteViewerStateRead(
             route_id=self.id,
             is_purchased=is_purchased,
+            is_available=is_purchased,
             is_active=is_active,
             is_completed=is_completed,
             scanned_places_count=scanned_places_count,

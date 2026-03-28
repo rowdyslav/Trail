@@ -25,11 +25,17 @@ class RouteRead(BaseModel):
     price_rub: int
     places_total: int
     places: list[PlaceRead]
+    is_purchased: bool = False
+    is_available: bool = False
+    is_active: bool = False
+    is_completed: bool = False
+    scanned_places_count: int = 0
 
 
 class RouteViewerStateRead(BaseModel):
     route_id: PydanticObjectId
     is_purchased: bool
+    is_available: bool
     is_active: bool
     is_completed: bool
     scanned_places_count: int
@@ -50,6 +56,7 @@ class UserRead(BaseModel):
     streak_key: StreakKey
     reward_points: int
     active_route_id: PydanticObjectId | None = None
+    purchased_route_ids: list[PydanticObjectId] = Field(default_factory=list)
 
 
 class BearerToken(BaseModel):
@@ -71,19 +78,54 @@ class ScanRequest(BaseModel):
 
 
 class ScanResponse(BaseModel):
-    success: bool
     status: str
-    already_scanned: bool
-    route_id: PydanticObjectId
-    route_title: str
-    active_route_completed: bool
-    reward_granted: bool
-    reward_points_granted: int
-    place_reward_points_granted: int
-    completion_bonus_granted: int
-    user: UserRead
-    place: PlaceRead
+    message: str
+    route: "ScanRouteRead"
+    point: "ScanPointRead"
+    streak: "ScanStreakRead"
+    avatar: "ScanAvatarRead"
+    route_progress: "ScanRouteProgressRead"
+    reward_points: "ScanRewardPointsRead"
+    ai: "ScanAIRead"
     completed_at: datetime | None = None
+
+
+class ScanRouteRead(BaseModel):
+    id: PydanticObjectId
+    title: str
+    current_route_id: PydanticObjectId | None = None
+
+
+class ScanPointRead(BaseModel):
+    id: PydanticObjectId
+    title: str
+
+
+class ScanStreakRead(BaseModel):
+    days: int
+    changed: bool
+
+
+class ScanAvatarRead(BaseModel):
+    state: StreakKey
+    changed: bool
+
+
+class ScanRouteProgressRead(BaseModel):
+    completed_points: int
+    total_points: int
+    is_completed: bool
+
+
+class ScanRewardPointsRead(BaseModel):
+    scan_gained: int
+    completion_bonus_gained: int
+    total_balance: int
+
+
+class ScanAIRead(BaseModel):
+    fact: str
+    fallback: bool
 
 
 class RedemptionPrizeSelection(BaseModel):
