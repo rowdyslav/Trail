@@ -53,7 +53,7 @@ export function HomePage() {
               </div>
               {authToken ? (
                 <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm">
-                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#5a645d]">Очки</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#5a645d]">Текущие очки</p>
                   <p className="mt-2 text-2xl font-extrabold text-[#0f5238]">{user.rewardPointsBalance}</p>
                 </div>
               ) : null}
@@ -134,7 +134,7 @@ export function HomePage() {
             <div className="z-10 max-w-md">
               <h3 className="mb-2 text-2xl font-bold text-[#4f6b4f]">Каталог бесплатный / платный</h3>
               <p className="text-[#4f6b4f] opacity-80">
-                Бесплатные тропы для входа в продукт и платные сценарии для премиального контента теперь разделены явно.
+                Бесплатные маршруты для первого знакомства с городом и платные маршруты для специальных бонусов.
               </p>
             </div>
             <Link
@@ -149,7 +149,7 @@ export function HomePage() {
             <MdMilitaryTech className="mb-4 text-3xl text-[#0f5238]" />
             <h3 className="mb-2 text-xl font-bold">Награды и коды</h3>
             <p className="text-sm leading-6 text-[#404943]">
-              Пользователь создаёт специальный код, а сотрудник выдаёт награды.
+              Вы создаёте специальный код, а сотрудник выдаёт награды.
             </p>
           </div>
         </div>

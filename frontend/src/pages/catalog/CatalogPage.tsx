@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
+import {Link} from 'react-router-dom'
+import {useRouteProgressStore} from '../../features/game/model/useRouteProgressStore'
 
 const sectionMeta = {
   free: {
@@ -12,7 +12,7 @@ const sectionMeta = {
   },
 } as const
 
-export function RoutesCatalogPage() {
+export function CatalogPage() {
   const catalogRoutes = useRouteProgressStore((state) => state.catalogRoutes)
   const freeRoutes = catalogRoutes.filter((route) => route.accessType === 'free')
   const paidRoutes = catalogRoutes.filter((route) => route.accessType === 'paid')
@@ -26,10 +26,6 @@ export function RoutesCatalogPage() {
             <h1 className="text-3xl font-extrabold tracking-tight text-[#1a1c1a] sm:text-4xl">
               Маршруты разделены на бесплатные и платные
             </h1>
-            <p className="mt-3 text-sm leading-6 text-[#404943]">
-              Сохраняем текущий MVP-флоу: активный маршрут остаётся прежним, а каталог помогает пользователю
-              выбрать, что проходить дальше.
-            </p>
           </div>
           <Link
             to="/profile"
@@ -54,19 +50,10 @@ export function RoutesCatalogPage() {
                 className="overflow-hidden rounded-[2rem] border border-[#dfe5dc] bg-white shadow-[0_16px_40px_rgba(15,82,56,0.08)]"
               >
                 <div className="relative h-52">
-                  <img src={route.image} alt={route.title} className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute left-5 right-5 top-5 flex items-center justify-between gap-3">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${
-                        route.accessType === 'free'
-                          ? 'bg-[#cbebc8] text-[#0f5238]'
-                          : 'bg-white/90 text-[#634019]'
-                      }`}
-                    >
-                      {route.accessType === 'free' ? 'Free' : 'Paid'}
-                    </span>
-                    <span className="rounded-full bg-black/45 px-3 py-1 text-sm font-semibold text-white">
+                  <img src={route.image} alt={route.title} className="h-full w-full object-cover"/>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"/>
+                  <div className="absolute left-5 right-5 top-5">
+                    <span className="rounded-full bg-[#0f5238] px-3 py-1 text-sm font-semibold text-white">
                       {route.priceLabel}
                     </span>
                   </div>
@@ -80,9 +67,9 @@ export function RoutesCatalogPage() {
                   <div className="flex flex-wrap gap-2 text-sm font-semibold text-[#404943]">
                     <span className="rounded-full bg-[#f3f4f0] px-3 py-2">{route.distanceLabel}</span>
                     <span className="rounded-full bg-[#f3f4f0] px-3 py-2">{route.durationLabel}</span>
-                    {route.purchased ? (
+                    {route.purchased &&
                       <span className="rounded-full bg-[#edf7ee] px-3 py-2 text-[#0f5238]">Доступен</span>
-                    ) : null}
+                    }
                   </div>
                   <div className="flex flex-wrap gap-3">
                     {route.isActive ? (

@@ -1,3 +1,4 @@
+﻿import { useState } from 'react'
 import {
   MdAutoAwesome,
   MdCheckroom,
@@ -16,20 +17,38 @@ import { profileStats, upgradeItems } from '../../entities/quest/model/mockData'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
 import { ActiveRedemptionCard } from '../../features/redemption/ui/ActiveRedemptionCard'
+import type { StreakKey } from '../../shared/types/game'
+
+const avatarByStreakKey: Record<StreakKey, string> = {
+  novice: '/img/level_1.png',
+  explorer: '/img/level_2.png',
+  traveler: '/img/level_3.png',
+  pathfinder: '/img/level_4.png',
+  legend: '/img/level_5.png',
+}
 
 export function ProfilePage() {
   const user = useAuthStore((state) => state.user)
   const activeRedemption = useRedemptionStore((state) => state.getActiveRedemptionForCurrentUser())
   const logoutUser = useAuthStore((state) => state.logoutUser)
   const clearRedemptionData = useRedemptionStore((state) => state.clearRedemptionData)
+  const cancelCurrentRedemption = useRedemptionStore((state) => state.cancelCurrentRedemption)
+  const [isCancellingRedemption, setIsCancellingRedemption] = useState(false)
+  const avatarSrc = avatarByStreakKey[user.streakKey] ?? avatarByStreakKey.novice
+
+  const handleCancelRedemption = async () => {
+    setIsCancellingRedemption(true)
+    await cancelCurrentRedemption()
+    setIsCancellingRedemption(false)
+  }
 
   return (
     <main className="space-y-8 px-6 pt-8 pb-32">
       <section className="relative flex flex-col items-center justify-center overflow-visible py-10">
         <div className="absolute inset-0 -z-10 scale-150 rounded-full bg-gradient-to-b from-[#b1f0ce]/30 to-transparent opacity-50 blur-3xl" />
         <div className="group relative">
-          <div className="h-52 rounded-full border-4 border-black transition-transform duration-500 group-hover:scale-105 md:h-80 md:w-80">
-            <img alt="Талисман" className="h-full w-full rounded-full object-contain" src="/img/гриб1.png" />
+          <div className="h-52 rounded-full border-4 border-black transition-transform duration-500 md:h-80 md:w-80">
+            <img alt="Талисман" className="h-full w-full rounded-full object-contain" src={avatarSrc} />
           </div>
           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 rounded-full border-4 border-[#f9faf6] bg-[#0f5238] px-6 py-2 font-bold text-white shadow-xl">
             Уровень {user.level}
@@ -44,7 +63,15 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {activeRedemption ? <ActiveRedemptionCard request={activeRedemption} /> : null}
+      {activeRedemption ? (
+        <ActiveRedemptionCard
+          request={activeRedemption}
+          isCancelling={isCancellingRedemption}
+          onCancel={() => {
+            void handleCancelRedemption()
+          }}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-[1.2fr,0.8fr]">
         <div className="space-y-4 rounded-lg bg-[#f3f4f0] p-6">

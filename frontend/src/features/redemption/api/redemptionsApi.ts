@@ -64,4 +64,12 @@ export const redemptionsApi = {
 
     return mapRedemptionCodeRead(result)
   },
+  cancel: async (token: string, code: string) => {
+    const result = await apiRequest<RedemptionCodeRead>(`/redemptions/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      token,
+    })
+
+    return mapRedemptionCodeRead(result)
+  },
 }

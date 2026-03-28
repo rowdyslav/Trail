@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CatalogRoute,
   DailyMission,
   Landmark,
@@ -71,6 +71,7 @@ export const mockUser: UserProfile = {
   xp: 1250,
   rewardPointsBalance: 480,
   streakDays: 12,
+  streakKey: 'explorer',
   nextLevelXp: 2000,
   avatarStage: 2,
   badges: [
@@ -268,3 +269,4 @@ export const avatarStages = [
     emoji: 'crown',
   },
 ] as const
+

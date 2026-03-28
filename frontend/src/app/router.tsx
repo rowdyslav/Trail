@@ -4,7 +4,7 @@ import { AdminLayout } from './layout/AdminLayout'
 import { HomePage } from '../pages/home/HomePage'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { RoutePage } from '../pages/route/RoutePage'
-import { RoutesCatalogPage } from '../pages/catalog/RoutesCatalogPage'
+import { CatalogPage } from '../pages/catalog/CatalogPage.tsx'
 import { RedeemPage } from '../pages/redeem/RedeemPage'
 import { RedeemConfirmPage } from '../pages/redeem/RedeemConfirmPage'
 import { RedeemResultPage } from '../pages/redeem/RedeemResultPage'
@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'auth', element: <AuthPage /> },
-      { path: 'routes', element: <RoutesCatalogPage /> },
+      { path: 'routes', element: <CatalogPage /> },
       { path: 'route', element: <RoutePage /> },
       {
         path: 'profile',
