@@ -4,13 +4,14 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from beanie import Document, Indexed, Link, PydanticObjectId
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, model_validator
 from pymongo import IndexModel
 
 from .api.schemas import (
     PlaceRead,
     PrizeRead,
     RedemptionCodeRead,
+    RoutePurchaseRead,
     RouteRead,
     UserProfileRead,
     UserRead,
@@ -23,10 +24,12 @@ from .domain.streaks import StreakKey, calculate_streak_key
 class User(PasswordMixin, Document):
     email: Annotated[EmailStr, Indexed(unique=True)]
     hashed_password: str
+    is_active: bool = True
     streak_days: int = 0
     streak_key: StreakKey = StreakKey.NOVICE
     reward_points: int = 0
     last_completed_at: datetime | None = None
+    active_route_id: PydanticObjectId | None = None
 
     class Settings:
         name = "users"
@@ -38,16 +41,23 @@ class User(PasswordMixin, Document):
         return UserRead(**self.model_dump())
 
     def to_profile_read(
-        self, active_redemptions: list[RedemptionCodeRead]
+        self,
+        *,
+        active_redemptions: list[RedemptionCodeRead],
+        purchased_routes: list[RoutePurchaseRead],
     ) -> UserProfileRead:
         return UserProfileRead(
-            **self.model_dump(), active_redemptions=active_redemptions
+            **self.model_dump(),
+            active_redemptions=active_redemptions,
+            purchased_routes=purchased_routes,
         )
 
 
 class Admin(PasswordMixin, Document):
     email: Annotated[EmailStr, Indexed(unique=True)]
     hashed_password: str
+    is_active: bool = True
+    title: str = "Администратор"
 
     class Settings:
         name = "admins"
@@ -56,34 +66,60 @@ class Admin(PasswordMixin, Document):
 class Place(Document):
     title: str
     qr_code_value: str = Field(unique=True)
+    reward_points: int = Field(default=0, ge=0)
 
     class Settings:
         name = "places"
 
     def to_read(self) -> PlaceRead:
-        return PlaceRead(id=self.id, title=self.title)
+        return PlaceRead(
+            id=self.id,
+            title=self.title,
+            reward_points=self.reward_points,
+        )
 
 
 class Route(Document):
     title: str
     description: str
     route_type: RouteType = RouteType.FREE
-    reward_points_on_completion: int = 0
+    reward_points_on_completion: int = Field(default=0, ge=0)
+    price_rub: int = Field(default=0, ge=0)
     places: list[Link[Place]] = Field(default_factory=list)
 
     class Settings:
         name = "routes"
 
+    @model_validator(mode="after")
+    def validate_pricing(self) -> Route:
+        if self.route_type == RouteType.FREE:
+            self.price_rub = 0
+        elif self.price_rub <= 0:
+            raise ValueError("Paid routes must have positive price_rub")
+        return self
+
     def has_place(self, place_id: PydanticObjectId) -> bool:
         return any(place.id == place_id for place in self.places)
 
-    def to_read(self) -> RouteRead:
+    def to_read(
+        self,
+        *,
+        is_purchased: bool = False,
+        is_active: bool = False,
+        is_completed: bool = False,
+        scanned_places_count: int = 0,
+    ) -> RouteRead:
         return RouteRead(
             id=self.id,
             title=self.title,
             description=self.description,
             route_type=self.route_type,
             reward_points_on_completion=self.reward_points_on_completion,
+            price_rub=self.price_rub,
+            is_purchased=is_purchased,
+            is_active=is_active,
+            is_completed=is_completed,
+            scanned_places_count=scanned_places_count,
             places_total=len(self.places),
             places=[place.to_read() for place in self.places],
         )
@@ -120,6 +156,35 @@ class PlaceCompletionHistory(Document):
         ]
 
 
+class RoutePlaceCompletion(Document):
+    user_id: PydanticObjectId
+    route_id: PydanticObjectId
+    place_id: PydanticObjectId
+    completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    class Settings:
+        name = "route_place_completions"
+        indexes = [
+            IndexModel([("user_id", 1), ("route_id", 1), ("place_id", 1)], unique=True),
+            IndexModel([("user_id", 1), ("route_id", 1)]),
+        ]
+
+
+class UserRouteProgress(Document):
+    user_id: PydanticObjectId
+    route_id: PydanticObjectId
+    scanned_place_ids: list[PydanticObjectId] = Field(default_factory=list)
+    is_completed: bool = False
+    completed_at: datetime | None = None
+    completion_bonus_granted: int = 0
+
+    class Settings:
+        name = "user_route_progress"
+        indexes = [
+            IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
+        ]
+
+
 class RouteCompletion(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
@@ -131,6 +196,42 @@ class RouteCompletion(Document):
         indexes = [
             IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
         ]
+
+
+class RoutePurchase(Document):
+    user_id: PydanticObjectId
+    route_id: PydanticObjectId
+    payment_id: str | None = None
+    payment_status: str = "pending"
+    amount_rub: int = Field(ge=0)
+    purchased_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    confirmed_at: datetime | None = None
+
+    class Settings:
+        name = "route_purchases"
+        indexes = [
+            IndexModel([("user_id", 1), ("route_id", 1)], unique=True),
+            IndexModel(
+                [("payment_id", 1)],
+                unique=True,
+                sparse=True,
+            ),
+        ]
+
+    def is_confirmed(self) -> bool:
+        return self.payment_status == "succeeded" and self.confirmed_at is not None
+
+    def to_read(self, *, confirmation_url: str | None = None) -> RoutePurchaseRead:
+        return RoutePurchaseRead(
+            route_id=self.route_id,
+            payment_id=self.payment_id,
+            payment_status=self.payment_status,
+            amount_rub=self.amount_rub,
+            confirmation_url=confirmation_url,
+            purchased_at=self.purchased_at,
+            confirmed_at=self.confirmed_at,
+            is_confirmed=self.is_confirmed(),
+        )
 
 
 class RedemptionCode(Document):

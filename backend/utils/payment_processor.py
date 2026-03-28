@@ -1,31 +1,43 @@
-import os
 import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from yookassa import Configuration, Payment
+from env import ENV
+
+
+def _load_yookassa() -> tuple[Any, Any]:
+    try:
+        from yookassa import Configuration, Payment
+    except ModuleNotFoundError as error:
+        raise RuntimeError(
+            "YooKassa dependency is not installed. Add the 'yookassa' package first."
+        ) from error
+    return Configuration, Payment
 
 
 class YooKassaClient:
     def __init__(self) -> None:
-        account_id = os.getenv("YOOKASSA_ACCOUNT_ID") or os.getenv("YOOKASSA_SHOP_ID")
-        secret_key = os.getenv("YOOKASSA_SECRET_KEY")
-
+        account_id = ENV.yookassa_effective_account_id
+        secret_key = ENV.yookassa_secret_key
         if not account_id or not secret_key:
-            raise ValueError("Не найдены YOOKASSA_ACCOUNT_ID/YOOKASSA_SHOP_ID или YOOKASSA_SECRET_KEY в .env")
+            raise ValueError(
+                "Missing YOOKASSA_ACCOUNT_ID/YOOKASSA_SHOP_ID or YOOKASSA_SECRET_KEY in environment"
+            )
 
-        Configuration.account_id = account_id
-        Configuration.secret_key = secret_key
+        configuration, payment = _load_yookassa()
+        configuration.account_id = account_id
+        configuration.secret_key = secret_key
+        self.payment_api = payment
 
     @staticmethod
     def _normalize_amount(amount: float | str | Decimal) -> str:
         try:
             normalized = Decimal(str(amount)).quantize(Decimal("0.01"))
         except (InvalidOperation, ValueError) as error:
-            raise ValueError("Сумма платежа должна быть числом") from error
+            raise ValueError("Payment amount must be numeric") from error
 
         if normalized <= 0:
-            raise ValueError("Сумма платежа должна быть больше 0")
+            raise ValueError("Payment amount must be greater than 0")
 
         return f"{normalized:.2f}"
 
@@ -53,14 +65,14 @@ class YooKassaClient:
             },
         }
 
-        return Payment.create(payment_data, str(uuid.uuid4()))
+        return self.payment_api.create(payment_data, str(uuid.uuid4()))
 
     def get_payment_status(self, payment_id: str) -> str:
-        payment = Payment.find_one(payment_id)
+        payment = self.payment_api.find_one(payment_id)
         return payment.status
 
     def get_payment(self, payment_id: str) -> Any:
-        return Payment.find_one(payment_id)
+        return self.payment_api.find_one(payment_id)
 
 
 class PaymentProcessor:

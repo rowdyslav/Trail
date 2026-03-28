@@ -10,72 +10,101 @@ from core.models import (
     RedemptionCode,
     Route,
     RouteCompletion,
+    RoutePlaceCompletion,
+    RoutePurchase,
     User,
+    UserRouteProgress,
 )
 from env import ENV
 
 client = AsyncMongoClient(ENV.mongo_url, uuidRepresentation="standard")
 db = client[ENV.mongo_database_name]
 
+DEMO_PLACES = (
+    {
+        "title": "Рязанский кремль",
+        "qr_code_value": "ryazan-kremlin-001",
+        "reward_points": 40,
+    },
+    {
+        "title": "Соборная колокольня",
+        "qr_code_value": "sobornaya-belltower-002",
+        "reward_points": 35,
+    },
+    {
+        "title": "Улица Почтовая",
+        "qr_code_value": "pochtovaya-street-003",
+        "reward_points": 25,
+    },
+    {
+        "title": "Государственный музей-заповедник С. А. Есенина",
+        "qr_code_value": "esenin-museum-001",
+        "reward_points": 60,
+    },
+    {
+        "title": "Казанская церковь в Константинове",
+        "qr_code_value": "kazan-church-konstantinovo-002",
+        "reward_points": 45,
+    },
+    {
+        "title": "Смотровая площадка над Окой",
+        "qr_code_value": "oka-viewpoint-003",
+        "reward_points": 30,
+    },
+    {
+        "title": "Национальный парк «Мещера»",
+        "qr_code_value": "meshchera-park-001",
+        "reward_points": 55,
+    },
+    {
+        "title": "Музей Сергея Есенина в Спас-Клепиках",
+        "qr_code_value": "esenin-museum-klepiki-002",
+        "reward_points": 35,
+    },
+    {
+        "title": "Озеро Белое",
+        "qr_code_value": "beloe-lake-003",
+        "reward_points": 30,
+    },
+)
+
 DEMO_ROUTES = (
     {
         "title": "Исторический центр Рязани",
         "description": "Небольшой маршрут по главным достопримечательностям центра Рязани.",
         "route_type": RouteType.FREE,
+        "price_rub": 0,
         "reward_points_on_completion": 0,
-        "places": (
-            {
-                "title": "Рязанский кремль",
-                "qr_code_value": "ryazan-kremlin-001",
-            },
-            {
-                "title": "Соборная колокольня",
-                "qr_code_value": "sobornaya-belltower-002",
-            },
-            {
-                "title": "Улица Почтовая",
-                "qr_code_value": "pochtovaya-street-003",
-            },
-        ),
-    },
-    {
-        "title": "Прогулка по Мещёрскому краю",
-        "description": "Маршрут по природным и культурным точкам Спас-Клепиковского района.",
-        "route_type": RouteType.PAID,
-        "reward_points_on_completion": 150,
-        "places": (
-            {
-                "title": "Национальный парк «Мещёра»",
-                "qr_code_value": "meshchera-park-001",
-            },
-            {
-                "title": "Музей Сергея Есенина в Спас-Клепиках",
-                "qr_code_value": "esenin-museum-klepiki-002",
-            },
-            {
-                "title": "Озеро Белое",
-                "qr_code_value": "beloe-lake-003",
-            },
+        "place_refs": (
+            "ryazan-kremlin-001",
+            "sobornaya-belltower-002",
+            "pochtovaya-street-003",
         ),
     },
     {
         "title": "По есенинским местам",
-        "description": "Маршрут по знаковым точкам, связанным с Сергеем Есениным и старинным селом Константиново.",
+        "description": "Маршрут по знаковым точкам, связанным с Сергеем Есениным и селом Константиново.",
         "route_type": RouteType.PAID,
+        "price_rub": 399,
         "reward_points_on_completion": 220,
-        "places": (
-            {
-                "title": "Государственный музей-заповедник С. А. Есенина",
-                "qr_code_value": "esenin-museum-001",
-            },
-            {
-                "title": "Казанская церковь в Константинове",
-                "qr_code_value": "kazan-church-konstantinovo-002",
-            },
-            {
-                "title": "Смотровая площадка над Окой",
-                "qr_code_value": "oka-viewpoint-003",
-            },
+        "place_refs": (
+            "ryazan-kremlin-001",
+            "esenin-museum-001",
+            "kazan-church-konstantinovo-002",
+            "oka-viewpoint-003",
+        ),
+    },
+    {
+        "title": "Прогулка по Мещерскому краю",
+        "description": "Маршрут по природным и культурным точкам Спас-Клепиковского района.",
+        "route_type": RouteType.PAID,
+        "price_rub": 349,
+        "reward_points_on_completion": 180,
+        "place_refs": (
+            "meshchera-park-001",
+            "esenin-museum-klepiki-002",
+            "beloe-lake-003",
+            "pochtovaya-street-003",
         ),
     },
 )
@@ -104,41 +133,10 @@ DEMO_PRIZES = (
 DEMO_ADMINS = (
     {
         "email": "admin@example.com",
+        "title": "Демо-администратор",
         "password": "admin123",
     },
 )
-
-
-async def has_actual_demo_data() -> bool:
-    routes = await Route.find({}, fetch_links=True).to_list()
-    places = await Place.find_all().to_list()
-
-    if len(routes) != len(DEMO_ROUTES):
-        return False
-    if len(places) != sum(len(route["places"]) for route in DEMO_ROUTES):
-        return False
-    if any(len(route.places) == 0 for route in routes):
-        return False
-
-    actual_route_signatures = {
-        (
-            route.title,
-            route.route_type,
-            route.reward_points_on_completion,
-            tuple(place.qr_code_value for place in route.places),
-        )
-        for route in routes
-    }
-    expected_route_signatures = {
-        (
-            route["title"],
-            route["route_type"],
-            route["reward_points_on_completion"],
-            tuple(place["qr_code_value"] for place in route["places"]),
-        )
-        for route in DEMO_ROUTES
-    }
-    return actual_route_signatures == expected_route_signatures
 
 
 async def has_actual_demo_prizes() -> bool:
@@ -163,23 +161,18 @@ async def has_actual_demo_prizes() -> bool:
 
 
 async def seed_demo_routes() -> None:
-    if await has_actual_demo_data():
-        return
-
-    await PlaceCompletionHistory.get_pymongo_collection().delete_many({})
-    await RouteCompletion.get_pymongo_collection().delete_many({})
-    await RedemptionCode.get_pymongo_collection().delete_many({})
-    await Route.get_pymongo_collection().delete_many({})
-    await Place.get_pymongo_collection().delete_many({})
+    places_by_qr_code: dict[str, Place] = {}
+    for place_data in DEMO_PLACES:
+        place = await Place(**place_data).insert()
+        places_by_qr_code[place.qr_code_value] = place
 
     for route_data in DEMO_ROUTES:
-        places = [
-            await Place(**place_data).insert() for place_data in route_data["places"]
-        ]
+        places = [places_by_qr_code[place_ref] for place_ref in route_data["place_refs"]]
         await Route(
             title=route_data["title"],
             description=route_data["description"],
             route_type=route_data["route_type"],
+            price_rub=route_data["price_rub"],
             reward_points_on_completion=route_data["reward_points_on_completion"],
             places=places,
         ).insert()
@@ -209,9 +202,22 @@ async def seed_demo_admins() -> None:
 
 
 async def seed_data() -> None:
+    await reset_gameplay_data()
     await seed_demo_routes()
     await seed_demo_prizes()
     await seed_demo_admins()
+
+
+async def reset_gameplay_data() -> None:
+    await PlaceCompletionHistory.get_pymongo_collection().delete_many({})
+    await RoutePlaceCompletion.get_pymongo_collection().delete_many({})
+    await UserRouteProgress.get_pymongo_collection().delete_many({})
+    await RouteCompletion.get_pymongo_collection().delete_many({})
+    await RoutePurchase.get_pymongo_collection().delete_many({})
+    await RedemptionCode.get_pymongo_collection().delete_many({})
+    await Route.get_pymongo_collection().delete_many({})
+    await Place.get_pymongo_collection().delete_many({})
+    await User.get_pymongo_collection().update_many({}, {"$set": {"active_route_id": None}})
 
 
 async def init_db() -> None:
@@ -224,7 +230,10 @@ async def init_db() -> None:
             Place,
             Prize,
             PlaceCompletionHistory,
+            RoutePlaceCompletion,
+            UserRouteProgress,
             RouteCompletion,
+            RoutePurchase,
             RedemptionCode,
         ],
     )

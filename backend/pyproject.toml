@@ -12,11 +12,11 @@ dependencies = [
     "beanie",
     "passlib",
     "argon2-cffi",
-    "icecream",
+    "yookassa",
 ]
 
 [dependency-groups]
-dev = ["ruff"]
+dev = ["ruff", "icecream"]
 
 [build-system]
 requires = ["hatchling"]

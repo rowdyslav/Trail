@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 from core.domain.rewards import RedemptionCodeStatus, RouteType
 from core.domain.shared import RedemptionPrizeItem
@@ -11,6 +11,7 @@ from core.domain.streaks import StreakKey
 class PlaceRead(BaseModel):
     id: PydanticObjectId
     title: str
+    reward_points: int
 
 
 class RouteRead(BaseModel):
@@ -19,6 +20,11 @@ class RouteRead(BaseModel):
     description: str
     route_type: RouteType
     reward_points_on_completion: int
+    price_rub: int
+    is_purchased: bool
+    is_active: bool
+    is_completed: bool
+    scanned_places_count: int
     places_total: int
     places: list[PlaceRead]
 
@@ -37,6 +43,7 @@ class UserRead(BaseModel):
     streak_days: int
     streak_key: StreakKey
     reward_points: int
+    active_route_id: PydanticObjectId | None = None
 
 
 class BearerToken(BaseModel):
@@ -59,11 +66,15 @@ class ScanRequest(BaseModel):
 
 class ScanResponse(BaseModel):
     success: bool
+    status: str
     already_scanned: bool
     route_id: PydanticObjectId
-    route_completed: bool
+    route_title: str
+    active_route_completed: bool
     reward_granted: bool
     reward_points_granted: int
+    place_reward_points_granted: int
+    completion_bonus_granted: int
     user: UserRead
     place: PlaceRead
     completed_at: datetime | None = None
@@ -88,8 +99,29 @@ class RedemptionCodeRead(BaseModel):
     items: list[RedemptionPrizeItem]
 
 
+class RoutePurchaseRead(BaseModel):
+    route_id: PydanticObjectId
+    payment_id: str | None = None
+    payment_status: str
+    amount_rub: int
+    confirmation_url: str | None = None
+    purchased_at: datetime
+    confirmed_at: datetime | None = None
+    is_confirmed: bool
+
+
 class UserProfileRead(UserRead):
     active_redemptions: list[RedemptionCodeRead] = Field(default_factory=list)
+    purchased_routes: list[RoutePurchaseRead] = Field(default_factory=list)
+
+
+class RoutePurchaseRequest(BaseModel):
+    return_url: HttpUrl
+
+
+class RouteSelectionRead(BaseModel):
+    route_id: PydanticObjectId
+    is_active: bool
 
 
 class RedemptionValidationRead(BaseModel):

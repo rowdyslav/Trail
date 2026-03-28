@@ -36,6 +36,10 @@ place_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Place not found",
 )
+place_not_in_active_route_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Place does not belong to the active route",
+)
 prize_not_found_error = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Prize not found or inactive",
@@ -63,4 +67,32 @@ insufficient_reward_points_error = HTTPException(
 admin_inactive_error = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail="Admin is inactive",
+)
+route_not_purchased_error = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Route is not purchased",
+)
+route_already_completed_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Route is already completed",
+)
+route_not_active_error = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Active route not found",
+)
+active_route_not_selected_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="No active route selected",
+)
+payment_not_confirmed_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Payment is not confirmed yet",
+)
+payment_failed_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Payment failed or was cancelled",
+)
+route_not_available_for_purchase_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Only paid routes can be purchased",
 )

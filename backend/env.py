@@ -23,6 +23,13 @@ class EnvSettings(BaseSettings):
     deepseek_api_key: str = Field(alias="DEEPSEEK_API_KEY")
     deepseek_model: str = Field(alias="DEEPSEEK_MODEL")
     deepseek_timeout_seconds: float = Field(alias="DEEPSEEK_TIMEOUT_SECONDS")
+    yookassa_account_id: str | None = Field(default=None, alias="YOOKASSA_ACCOUNT_ID")
+    yookassa_shop_id: str | None = Field(default=None, alias="YOOKASSA_SHOP_ID")
+    yookassa_secret_key: str | None = Field(default=None, alias="YOOKASSA_SECRET_KEY")
+
+    @property
+    def yookassa_effective_account_id(self) -> str | None:
+        return self.yookassa_account_id or self.yookassa_shop_id
 
     @field_validator("cors_allow_origins", mode="before")
     @classmethod
