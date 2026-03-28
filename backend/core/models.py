@@ -13,6 +13,7 @@ from .api.schemas import (
     RedemptionCodeRead,
     RoutePurchaseRead,
     RouteRead,
+    RouteViewerStateRead,
     UserProfileRead,
     UserRead,
 )
@@ -105,14 +106,7 @@ class Route(Document):
     def has_place(self, place_id: PydanticObjectId) -> bool:
         return any(place.id == place_id for place in self.places)
 
-    def to_read(
-        self,
-        *,
-        is_purchased: bool = False,
-        is_active: bool = False,
-        is_completed: bool = False,
-        scanned_places_count: int = 0,
-    ) -> RouteRead:
+    def to_read(self) -> RouteRead:
         return RouteRead(
             id=self.id,
             title=self.title,
@@ -120,12 +114,24 @@ class Route(Document):
             route_type=self.route_type,
             reward_points_on_completion=self.reward_points_on_completion,
             price_rub=self.price_rub,
+            places_total=len(self.places),
+            places=[place.to_read() for place in self.places],
+        )
+
+    def to_viewer_state_read(
+        self,
+        *,
+        is_purchased: bool,
+        is_active: bool,
+        is_completed: bool,
+        scanned_places_count: int,
+    ) -> RouteViewerStateRead:
+        return RouteViewerStateRead(
+            route_id=self.id,
             is_purchased=is_purchased,
             is_active=is_active,
             is_completed=is_completed,
             scanned_places_count=scanned_places_count,
-            places_total=len(self.places),
-            places=[place.to_read() for place in self.places],
         )
 
 

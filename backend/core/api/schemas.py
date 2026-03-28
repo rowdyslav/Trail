@@ -23,12 +23,16 @@ class RouteRead(BaseModel):
     route_type: RouteType
     reward_points_on_completion: int
     price_rub: int
+    places_total: int
+    places: list[PlaceRead]
+
+
+class RouteViewerStateRead(BaseModel):
+    route_id: PydanticObjectId
     is_purchased: bool
     is_active: bool
     is_completed: bool
     scanned_places_count: int
-    places_total: int
-    places: list[PlaceRead]
 
 
 class PrizeRead(BaseModel):

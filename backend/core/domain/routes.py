@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 
+from core.api.schemas import RouteRead, RouteViewerStateRead
 from core.api.errors import route_not_found_error
 from core.domain.rewards import RouteType
 from core.models import Route, RouteCompletion, RoutePurchase, User, UserRouteProgress
@@ -59,18 +60,70 @@ async def is_route_purchased(user_id: PydanticObjectId, route_id: PydanticObject
     return purchase is not None and purchase.is_confirmed()
 
 
-async def build_route_read_for_user(route: Route, user: User):
-    progress = await get_user_progress(user.id, route.id)
-    purchase = await get_user_purchase(user.id, route.id)
+def build_route_read(route: Route) -> RouteRead:
+    return route.to_read()
+
+
+def build_route_viewer_state(
+    route: Route,
+    user: User,
+    *,
+    progress: UserRouteProgress | None = None,
+    purchase: RoutePurchase | None = None,
+) -> RouteViewerStateRead:
     scanned_places_count = 0 if progress is None else len(progress.scanned_place_ids)
 
-    return route.to_read(
+    return route.to_viewer_state_read(
         is_purchased=route.route_type == RouteType.FREE
         or (purchase is not None and purchase.is_confirmed()),
         is_active=user.active_route_id == route.id,
         is_completed=False if progress is None else progress.is_completed,
         scanned_places_count=scanned_places_count,
     )
+
+
+async def build_route_viewer_state_for_user(
+    route: Route,
+    user: User,
+) -> RouteViewerStateRead:
+    progress = await get_user_progress(user.id, route.id)
+    purchase = await get_user_purchase(user.id, route.id)
+    return build_route_viewer_state(route, user, progress=progress, purchase=purchase)
+
+
+async def build_route_viewer_states_for_user(
+    routes: list[Route],
+    user: User,
+) -> list[RouteViewerStateRead]:
+    if not routes:
+        return []
+
+    route_ids = [route.id for route in routes]
+    progresses = await UserRouteProgress.find(
+        {
+            "user_id": user.id,
+            "route_id": {"$in": route_ids},
+        }
+    ).to_list()
+    purchases = await RoutePurchase.find(
+        {
+            "user_id": user.id,
+            "route_id": {"$in": route_ids},
+        }
+    ).to_list()
+
+    progress_by_route_id = {progress.route_id: progress for progress in progresses}
+    purchase_by_route_id = {purchase.route_id: purchase for purchase in purchases}
+
+    return [
+        build_route_viewer_state(
+            route,
+            user,
+            progress=progress_by_route_id.get(route.id),
+            purchase=purchase_by_route_id.get(route.id),
+        )
+        for route in routes
+    ]
 
 
 async def mark_route_completed(

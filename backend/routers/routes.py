@@ -20,11 +20,14 @@ from core.api.schemas import (
     RoutePurchaseRequest,
     RouteRead,
     RouteSelectionRead,
+    RouteViewerStateRead,
 )
 from core.deps import CurrentUser
 from core.domain.rewards import RouteType
 from core.domain.routes import (
-    build_route_read_for_user,
+    build_route_read,
+    build_route_viewer_state_for_user,
+    build_route_viewer_states_for_user,
     get_route_or_404,
     get_user_progress,
     get_user_purchase,
@@ -41,24 +44,43 @@ def get_payment_processor() -> PaymentProcessor:
 
 @router.get(
     "",
-    responses=ber(unauthorized_error),
 )
 async def read_routes(
-    me: CurrentUser,
     route_type: RouteType | None = Query(default=None),
 ) -> list[RouteRead]:
     filters = {} if route_type is None else {"route_type": route_type}
     routes = await Route.find(filters, fetch_links=True).to_list()
-    return [await build_route_read_for_user(route, me) for route in routes]
+    return [build_route_read(route) for route in routes]
+
+
+@router.get(
+    "/viewer-states",
+    responses=ber(unauthorized_error),
+)
+async def read_route_viewer_states(me: CurrentUser) -> list[RouteViewerStateRead]:
+    routes = await Route.find({}, fetch_links=True).to_list()
+    return await build_route_viewer_states_for_user(routes, me)
+
+
+@router.get(
+    "/{route_id}/viewer-state",
+    responses=ber(unauthorized_error, route_not_found_error),
+)
+async def read_route_viewer_state(
+    me: CurrentUser,
+    route_id: PydanticObjectId,
+) -> RouteViewerStateRead:
+    route = await get_route_or_404(route_id)
+    return await build_route_viewer_state_for_user(route, me)
 
 
 @router.get(
     "/{route_id}",
-    responses=ber(unauthorized_error, route_not_found_error),
+    responses=ber(route_not_found_error),
 )
-async def read_route(me: CurrentUser, route_id: PydanticObjectId) -> RouteRead:
+async def read_route(route_id: PydanticObjectId) -> RouteRead:
     route = await get_route_or_404(route_id)
-    return await build_route_read_for_user(route, me)
+    return build_route_read(route)
 
 
 @router.post(
