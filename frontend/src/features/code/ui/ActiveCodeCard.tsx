@@ -1,6 +1,5 @@
-import {Link} from 'react-router-dom'
-import {Button} from '../../../shared/ui/Button'
-import type {CodeRequest} from '../../../shared/types/game'
+import { Button } from '../../../shared/ui/Button'
+import type { CodeRequest } from '../../../shared/types/game'
 
 interface ActiveCodeCardProps {
   request: CodeRequest
@@ -15,15 +14,15 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 })
 
-export function ActiveCodeCard({request, isCancelling = false, onCancel}: ActiveCodeCardProps) {
+export function ActiveCodeCard({ request, isCancelling = false, onCancel }: ActiveCodeCardProps) {
   return (
     <section className="rounded-[2rem] bg-[#0f5238] p-6 text-white shadow-[0_20px_50px_rgba(15,82,56,0.18)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/70">Активная заявка</p>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/70">Активный код</p>
           <h2 className="mt-3 text-2xl font-extrabold">Покажите этот код администратору</h2>
           <p className="mt-3 text-sm leading-6 text-white/80">
-            Заявка создана {dateFormatter.format(new Date(request.createdAt))}. Состав уже зафиксирован и ожидает выдачи.
+            Код создан {dateFormatter.format(new Date(request.createdAt))}.
           </p>
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-white/10 px-5 py-4 text-center">
@@ -43,15 +42,8 @@ export function ActiveCodeCard({request, isCancelling = false, onCancel}: Active
         ))}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Link
-          to={`/redeem/${request.id}`}
-          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[#0f5238]"
-        >
-          Открыть код
-        </Link>
-
-        {onCancel &&
+      {onCancel ? (
+        <div className="mt-5 flex flex-wrap gap-3">
           <Button
             variant="ghost"
             onClick={onCancel}
@@ -60,8 +52,8 @@ export function ActiveCodeCard({request, isCancelling = false, onCancel}: Active
           >
             {isCancelling ? 'Удаляем код...' : 'Удалить текущий код'}
           </Button>
-        }
-      </div>
+        </div>
+      ) : null}
     </section>
   )
 }

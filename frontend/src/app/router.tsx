@@ -5,9 +5,6 @@ import { HomePage } from '../pages/home/HomePage'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { RoutePage } from '../pages/route/RoutePage'
 import { CatalogPage } from '../pages/catalog/CatalogPage.tsx'
-import { RedeemPage } from '../pages/redeem/RedeemPage'
-import { RedeemConfirmPage } from '../pages/redeem/RedeemConfirmPage'
-import { RedeemResultPage } from '../pages/redeem/RedeemResultPage'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminCodesPage } from '../pages/admin/AdminCodesPage'
 import { AuthPage } from '../pages/auth/AuthPage'
@@ -33,30 +30,7 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      {
-        path: 'redeem',
-        element: (
-          <RequireAuth>
-            <RedeemPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'redeem/confirm',
-        element: (
-          <RequireAuth>
-            <RedeemConfirmPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'redeem/:requestId',
-        element: (
-          <RequireAuth>
-            <RedeemResultPage />
-          </RequireAuth>
-        ),
-      },
+      { path: 'redeem/*', element: <Navigate to="/profile" replace /> },
     ],
   },
   {

@@ -3,6 +3,8 @@ import { MdCheckCircle, MdErrorOutline, MdLockOutline, MdRefresh, MdStars } from
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useActivatePoint } from '../../features/scan/model/useActivatePoint'
+import { avatarByStreakKey } from '../../shared/lib/avatarByStreakKey'
+import { getMushroomReactionByStreakKey } from '../../shared/lib/mushroomReactionByStreakKey'
 import { Button } from '../../shared/ui/Button'
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -12,13 +14,39 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 })
 
+function MushroomStatusCard({
+  avatarSrc,
+  reaction,
+}: {
+  avatarSrc: string
+  reaction: string | null
+}) {
+  return (
+    <div className="rounded-[1.75rem] border border-[#d8eadc] bg-[linear-gradient(180deg,#f8fcf8_0%,#eef7f0_100%)] p-5 shadow-[0_12px_30px_rgba(15,82,56,0.06)]">
+      <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
+        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-[#0f5238]/12 bg-white">
+          <img src={avatarSrc} alt="Текущий гриб" className="h-full w-full object-contain" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#0f5238]">Текущий гриб</p>
+          <p className="text-sm leading-6 text-[#2f3a33]">
+            {reaction ?? 'Гриб рядом и внимательно следит за вашим прогрессом по маршруту.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ActivatePointPage() {
   const { token: tokenParam } = useParams()
   const [searchParams] = useSearchParams()
   const authToken = useAuthStore((state) => state.authToken)
   const isAuthReady = useAuthStore((state) => state.isAuthReady)
   const isAuthLoading = useAuthStore((state) => state.isAuthLoading)
+  const user = useAuthStore((state) => state.user)
   const updateUser = useAuthStore((state) => state.updateUser)
+
   const activationToken = tokenParam ?? searchParams.get('token')
   const canActivate = Boolean(activationToken && authToken && isAuthReady && !isAuthLoading)
   const activation = useActivatePoint({
@@ -26,6 +54,7 @@ export function ActivatePointPage() {
     authToken: authToken ?? '',
     enabled: canActivate,
   })
+
   const activationData = activation.data
   const totalRewardGain = activationData
     ? activationData.reward_points.scan_gained + activationData.reward_points.completion_bonus_gained
@@ -36,8 +65,8 @@ export function ActivatePointPage() {
       return
     }
 
-    updateUser((user) => ({
-      ...user,
+    updateUser((currentUser) => ({
+      ...currentUser,
       streakDays: activationData.streak.days,
       streakKey: activationData.avatar.state,
       rewardPointsBalance: activationData.reward_points.total_balance,
@@ -51,6 +80,7 @@ export function ActivatePointPage() {
       : !authToken
         ? 'unauthorized'
         : activation.state
+
   const data = canActivate ? activationData : null
   const error = resolvedState === 'invalid'
     ? 'Ссылка активации не содержит токен точки.'
@@ -58,7 +88,10 @@ export function ActivatePointPage() {
       ? 'Войдите в аккаунт, чтобы активировать точку маршрута.'
       : activation.error
 
-  console.log(data?.ai.fact)
+  const currentMushroomKey = data?.avatar.state ?? user.streakKey
+  const currentMushroomAvatar = avatarByStreakKey[currentMushroomKey] ?? avatarByStreakKey.novice
+  const mushroomReaction = data?.avatar.changed ? getMushroomReactionByStreakKey(data.avatar.state) : null
+
   return (
     <main className="mx-auto flex min-h-[calc(100vh-170px)] max-w-3xl items-center px-4 pb-28 pt-8 sm:px-6">
       <section className="relative w-full overflow-hidden rounded-[2rem] border border-[#dfe5dc] bg-white shadow-[0_24px_70px_rgba(15,82,56,0.12)]">
@@ -94,6 +127,8 @@ export function ActivatePointPage() {
                 </div>
               </div>
 
+              <MushroomStatusCard avatarSrc={currentMushroomAvatar} reaction={mushroomReaction} />
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-[1.5rem] bg-[#f4f7f1] p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Текущая серия</p>
@@ -118,7 +153,6 @@ export function ActivatePointPage() {
                 </div>
               </div>
 
-
               <div className="rounded-[1.75rem] border border-[#cfe4d7] bg-[linear-gradient(180deg,#f7fcf8_0%,#eef8f1_100%)] p-5 text-left shadow-[0_12px_30px_rgba(15,82,56,0.06)]">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#0f5238]">Историческая справка</p>
                 <p className="mt-3 text-sm leading-7 text-[#1f2a24]">{data.ai.fact}</p>
@@ -142,37 +176,42 @@ export function ActivatePointPage() {
           ) : null}
 
           {resolvedState === 'duplicate' && data ? (
-            <div className="mt-8 rounded-[1.8rem] border border-[#e5d7a6] bg-[#fff8e8] p-6">
-              <div className="flex items-start gap-4 text-left">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f2dfaa] text-[#8a6110]">
-                  <MdRefresh className="text-2xl" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-extrabold text-[#1a1c1a]">Точка уже была активирована</h2>
-                  <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.message}</p>
-                  <p className="mt-3 text-sm leading-6 text-[#5f562f]">
-                    {data.point.title} ({data.point.id}). Маршрут: {data.route.title}. Текущий баланс:{' '}
-                    {data.reward_points.total_balance}.
-                  </p>
-                  <div className="mt-4 rounded-[1.5rem] border border-[#ead99d] bg-[#fffdf5] p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#8a6110]">Историческая справка</p>
-                    <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.ai.fact}</p>
+            <div className="mt-8 space-y-5">
+              <div className="rounded-[1.8rem] border border-[#e5d7a6] bg-[#fff8e8] p-6">
+                <div className="flex items-start gap-4 text-left">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f2dfaa] text-[#8a6110]">
+                    <MdRefresh className="text-2xl" />
                   </div>
-                  <div className="mt-4 flex flex-wrap justify-center gap-3 sm:justify-start">
-                    <Link
-                      to="/route"
-                      className="inline-flex items-center justify-center rounded-full bg-[#8a6110] px-5 py-3 text-sm font-bold text-white"
-                    >
-                      Открыть маршрут
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="inline-flex items-center justify-center rounded-full border border-[#d8c78e] px-5 py-3 text-sm font-bold text-[#5f562f]"
-                    >
-                      Открыть профиль
-                    </Link>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-extrabold text-[#1a1c1a]">Точка уже была активирована</h2>
+                    <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.message}</p>
+                    <p className="mt-3 text-sm leading-6 text-[#5f562f]">
+                      {data.point.title}. Маршрут: {data.route.title}. Текущий баланс: {data.reward_points.total_balance}.
+                    </p>
                   </div>
                 </div>
+              </div>
+
+              <MushroomStatusCard avatarSrc={currentMushroomAvatar} reaction={mushroomReaction} />
+
+              <div className="rounded-[1.5rem] border border-[#ead99d] bg-[#fffdf5] p-4 text-left">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#8a6110]">Историческая справка</p>
+                <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.ai.fact}</p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+                <Link
+                  to="/route"
+                  className="inline-flex items-center justify-center rounded-full bg-[#8a6110] px-5 py-3 text-sm font-bold text-white"
+                >
+                  Открыть маршрут
+                </Link>
+                <Link
+                  to="/profile"
+                  className="inline-flex items-center justify-center rounded-full border border-[#d8c78e] px-5 py-3 text-sm font-bold text-[#5f562f]"
+                >
+                  Открыть профиль
+                </Link>
               </div>
             </div>
           ) : null}
@@ -207,7 +246,7 @@ export function ActivatePointPage() {
             </div>
           ) : null}
 
-          {resolvedState === 'invalid' || resolvedState === 'error' ? (
+          {(resolvedState === 'invalid' || resolvedState === 'error') ? (
             <div className="mt-8 rounded-[1.8rem] border border-[#ecc9c3] bg-[#fff1ef] p-6">
               <div className="flex items-start gap-4 text-left">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-[#9b4232] shadow-sm">

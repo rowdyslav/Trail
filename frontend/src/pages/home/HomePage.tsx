@@ -1,8 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MdArrowForward, MdMap, MdMilitaryTech, MdPaid } from 'react-icons/md'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
+import { routeShowcaseImages } from '../../features/navigation/lib/routeImage'
+
+const heroFallbackImage = '/img/photo/kremlin.jpg'
 
 export function HomePage() {
   const route = useRouteProgressStore((state) => state.route)
@@ -10,12 +13,40 @@ export function HomePage() {
   const loadCatalogRoutes = useRouteProgressStore((state) => state.loadCatalogRoutes)
   const user = useAuthStore((state) => state.user)
   const authToken = useAuthStore((state) => state.authToken)
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0)
+
   const freeCount = catalogRoutes.filter((item) => item.accessType === 'free').length
   const paidCount = catalogRoutes.filter((item) => item.accessType === 'paid').length
+  const shouldAnimateHero = !authToken || !route.id
+
+  const animatedHeroImages = useMemo(() => {
+    const catalogImages = catalogRoutes
+      .map((item) => item.image)
+      .filter((image, index, images) => Boolean(image) && images.indexOf(image) === index)
+
+    const images = catalogImages.length > 0 ? catalogImages : routeShowcaseImages
+    return images.length > 0 ? images : [heroFallbackImage]
+  }, [catalogRoutes])
+
+  const activeHeroImage = route.image || heroFallbackImage
+
+  const heroAlt = shouldAnimateHero ? 'Маршруты по Рязани' : route.title
 
   useEffect(() => {
     void loadCatalogRoutes()
   }, [loadCatalogRoutes])
+
+  useEffect(() => {
+    if (!shouldAnimateHero || animatedHeroImages.length <= 1) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setHeroSlideIndex((currentIndex) => (currentIndex + 1) % animatedHeroImages.length)
+    }, 4800)
+
+    return () => window.clearInterval(timer)
+  }, [animatedHeroImages.length, shouldAnimateHero])
 
   return (
     <main className="relative">
@@ -57,29 +88,43 @@ export function HomePage() {
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#5a645d]">Платных маршрута</p>
                 <p className="mt-2 text-2xl font-extrabold text-[#0f5238]">{paidCount}</p>
               </div>
-              {authToken && (
-                <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm flex flex-col justify-between">
+              {authToken ? (
+                <div className="flex flex-col justify-between rounded-[1.5rem] bg-white px-4 py-4 shadow-sm">
                   <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#5a645d]">Текущие очки</p>
                   <p className="mt-2 text-2xl font-extrabold text-[#0f5238]">{user.rewardPointsBalance}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
 
           <div className="order-1 relative lg:order-2">
             <div className="relative z-10 aspect-[4/5] overflow-hidden rounded-lg shadow-2xl lg:rotate-2">
-              <img
-                className="h-full w-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSUf0LWBUu36jPFTTPkeI_OJelOCfmOyZlkz-2X_utsbZwKzrY0Oo_qq4_kXjSXZV6AgXPUN_DzVO7xVX-RTt6iQitLQ_utXFTD8sR5Os3g44owU_4UBMAvHWNtQdGmlzJ5Sts8BusrfDImBSVhEy9sU2ShcwzJfEjVOLipXTlkyneHAN8AfqkJd256PW5jPoRjfzZj2p9tf5ijrRM7CIaZW1eleBo7zaGMpm2hA8b-RmtnwNn6R9X-J9KqlUhLdL4PY2XGfSo_MOF"
-                alt="Ryazan Kremlin"
-              />
+              {shouldAnimateHero ? (
+                animatedHeroImages.map((image, index) => (
+                  <img
+                    key={image}
+                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-in-out ${
+                      index === heroSlideIndex ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    src={image}
+                    alt={heroAlt}
+                  />
+                ))
+              ) : (
+                <img className="h-full w-full object-cover" src={activeHeroImage} alt={heroAlt} />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              {authToken ? (
+              {authToken && route.id ? (
                 <div className="absolute bottom-8 left-8 right-8 text-white">
                   <p className="mb-1 text-sm font-medium opacity-80">Текущая цель</p>
                   <h3 className="text-2xl font-bold">{route.title}</h3>
                 </div>
-              ) : null}
+              ) : (
+                <div className="absolute bottom-8 left-8 right-8 text-white">
+                  <p className="mb-1 text-sm font-medium opacity-80">Маршруты Рязани</p>
+                  <h3 className="text-2xl font-bold">Выберите прогулку и начните путь</h3>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -96,10 +141,7 @@ export function HomePage() {
               <p className="mb-6 max-w-sm text-[#404943]">
                 Следите за прогрессом маршрута, открывайте QR-точки и получайте XP вместе с очками.
               </p>
-              <Link
-                to="/route"
-                className="flex items-center gap-2 font-bold text-[#0f5238] transition-all group-hover:gap-4"
-              >
+              <Link to="/route" className="flex items-center gap-2 font-bold text-[#0f5238] transition-all group-hover:gap-4">
                 Исследовать карту
                 <MdArrowForward />
               </Link>
@@ -113,11 +155,8 @@ export function HomePage() {
                 <p className="mb-6 leading-relaxed text-white/80">
                   У тебя уже {user.rewardPointsBalance} очков. Их можно обменять на бонусы или скидку на платные маршруты.
                 </p>
-                <Link
-                  to="/redeem"
-                  className="inline-flex rounded-full bg-white px-4 py-3 text-sm font-bold text-[#0f5238]"
-                >
-                  Обменять очки
+                <Link to="/profile" className="inline-flex rounded-full bg-white px-4 py-3 text-sm font-bold text-[#0f5238]">
+                  Открыть профиль
                 </Link>
               </div>
             </div>
@@ -128,10 +167,7 @@ export function HomePage() {
                 <p className="mb-6 leading-relaxed text-white/80">
                   После регистрации откроются очки, серия, профиль и персональные данные пользователя.
                 </p>
-                <Link
-                  to="/auth"
-                  className="inline-flex rounded-full bg-white px-4 py-3 text-sm font-bold text-[#0f5238]"
-                >
+                <Link to="/auth" className="inline-flex rounded-full bg-white px-4 py-3 text-sm font-bold text-[#0f5238]">
                   Войти или зарегистрироваться
                 </Link>
               </div>

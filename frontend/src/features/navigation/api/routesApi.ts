@@ -9,6 +9,7 @@ import type {
   RoutePointKind,
   RoutePointState,
 } from '../../../shared/types/game'
+import { getRouteImage } from '../lib/routeImage'
 
 interface PlaceRead {
   id: string
@@ -67,31 +68,15 @@ export interface RouteViewerProfileState {
   purchasedRouteIds?: string[]
 }
 
-const routeImages: Record<RouteAccessType, string[]> = {
-  free: [
-    'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80',
-  ],
-  paid: [
-    'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-  ],
-}
-
 const getDurationLabel = (placesTotal: number) => `${Math.max(placesTotal * 12, 15)} мин`
 
 const getDistanceLabel = (placesTotal: number) =>
   `${(Math.max(placesTotal, 1) * 0.8).toFixed(1).replace('.', ',')} км`
 
-const getRouteImage = (accessType: RouteAccessType, index: number) => {
-  const images = routeImages[accessType]
-  return images[index % images.length]
-}
-
 const guessCity = (description: string) => {
   const normalized = description.toLowerCase()
 
-  if (normalized.includes('рязан')) {
+  if (normalized.includes('рязань')) {
     return 'Рязань'
   }
 
@@ -99,7 +84,7 @@ const guessCity = (description: string) => {
     return 'Константиново'
   }
 
-  if (normalized.includes('москв')) {
+  if (normalized.includes('москва')) {
     return 'Москва'
   }
 
@@ -170,7 +155,7 @@ const mapPlaceToRoutePoint = (route: RouteWithViewerState, place: PlaceRead, ind
     id: place.id,
     title: place.title,
     subtitle: getRoutePointSubtitle(kind, state, index),
-    image: getRouteImage(route.route_type, index),
+    image: getRouteImage(route.title, route.description, route.route_type),
     latitude: place.latitude,
     longitude: place.longitude,
     state,
@@ -206,12 +191,12 @@ const mapPlaceToCheckpoint = (route: RouteWithViewerState, place: PlaceRead, ind
   }
 }
 
-const mapRouteToCatalogRoute = (route: RouteWithViewerState, index: number): CatalogRoute => ({
+const mapRouteToCatalogRoute = (route: RouteWithViewerState): CatalogRoute => ({
   id: route.id,
   city: guessCity(route.description),
   title: route.title,
   description: route.description,
-  image: getRouteImage(route.route_type, index),
+  image: getRouteImage(route.title, route.description, route.route_type),
   accessType: route.route_type,
   priceLabel: route.route_type === 'free' ? 'Free' : `${route.price_rub} ₽`,
   pricePoints: undefined,
@@ -230,6 +215,7 @@ const mapRouteToRouteDetails = (route: RouteWithViewerState): RouteDetails => {
     city: guessCity(route.description),
     title: route.title,
     description: route.description,
+    image: getRouteImage(route.title, route.description, route.route_type),
     accessType: route.route_type,
     priceRub: route.price_rub,
     priceLabel: route.route_type === 'free' ? 'Free' : `${route.price_rub} ₽`,
@@ -316,7 +302,7 @@ export const routesApi = {
     return routes.map((route) => normalizeRoute(route, viewerState))
   },
   toCatalogRoutes(routes: RouteRead[], viewerState?: RouteViewerProfileState) {
-    return routes.map((route, index) => mapRouteToCatalogRoute(normalizeRoute(route, viewerState), index))
+    return routes.map((route) => mapRouteToCatalogRoute(normalizeRoute(route, viewerState)))
   },
   toRouteDetails(route: RouteRead | null, viewerState?: RouteViewerProfileState) {
     return route ? mapRouteToRouteDetails(normalizeRoute(route, viewerState)) : null

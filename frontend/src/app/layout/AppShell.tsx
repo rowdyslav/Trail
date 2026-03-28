@@ -23,7 +23,7 @@ export function AppShell() {
             <img
               alt="Mushroom mascot logo"
               className="h-12 w-12 rounded-full object-contain"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAleJddpaeDT0cLlKaNsGrWB7XZ7MzGG02R8vApZLdZzgi0UGuKRkSX9h2d5PheoVVj5FIsk3Qsx6XBc1MrWOA6FH849zzv5r1IDuhruVd8TW8elakoKunZweqNbxLi3XP0EmpoLP0uHplr7ZrlWNTLrO8Puw6LBIwAKaFCXPpcEFJcf7IFa48Km2lrGUU2n_Z8ufTeWXjb5z0_ppBoj0TGZu_AP5TbSESW6lY1BVbSPCAyQ9dMu4begjIB3Ay7s8t0n2FpGOeQ4nH9"
+              src="/img/mushrooms/logo.png"
             />
 
             <span className="truncate text-2xl font-extrabold tracking-tight text-[#0f5238]">

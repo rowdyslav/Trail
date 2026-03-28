@@ -37,6 +37,7 @@ export interface RouteDetails {
   city: string
   title: string
   description: string
+  image: string
   accessType: RouteAccessType
   priceRub: number
   priceLabel: string

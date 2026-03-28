@@ -290,30 +290,30 @@ export function RoutePage() {
                 key={routePoint.id}
                 className={
                   isLocked
-                    ? 'group relative flex items-center gap-4 rounded-lg bg-[#e2e3df]/40 p-3 opacity-80 grayscale-[0.5]'
-                    : 'group relative flex items-center gap-4 rounded-lg bg-[#f3f4f0] p-3 transition-all hover:bg-[#edeeea]'
+                    ? 'group relative flex items-start gap-3 rounded-lg bg-[#e2e3df]/40 p-3 opacity-80 grayscale-[0.5] sm:items-center sm:gap-4'
+                    : 'group relative flex items-start gap-3 rounded-lg bg-[#f3f4f0] p-3 transition-all hover:bg-[#edeeea] sm:items-center sm:gap-4'
                 }
               >
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-24">
                   <img alt={routePoint.title} className="h-full w-full object-cover" src={routePoint.image} />
                   {!isLocked ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-[#0f5238]/20">
                       {routePoint.state === 'visited' ? (
-                        <MdCheckCircle className="text-3xl text-white" />
+                        <MdCheckCircle className="text-2xl text-white sm:text-3xl" />
                       ) : routePoint.kind === 'finish' ? (
-                        <MdFlag className="text-3xl text-white" />
+                        <MdFlag className="text-2xl text-white sm:text-3xl" />
                       ) : (
-                        <MdRadioButtonChecked className="text-3xl text-white" />
+                        <MdRadioButtonChecked className="text-2xl text-white sm:text-3xl" />
                       )}
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                      <MdLock className="text-3xl text-white" />
+                      <MdLock className="text-2xl text-white sm:text-3xl" />
                     </div>
                   )}
                 </div>
 
-                <div className="min-w-0 flex-grow space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase text-[#0f5238]">
                       {routePoint.kind === 'finish' ? 'Финиш' : 'QR-точка'}
@@ -332,19 +332,21 @@ export function RoutePage() {
                           : 'Посещено'}
                     </span>
                   </div>
-                  <h3 className="truncate text-lg font-bold text-[#1a1c1a]">{routePoint.title}</h3>
-                  <p className="text-sm text-[#404943]">{routePoint.subtitle}</p>
+                  <h3 className="truncate text-base font-bold leading-tight text-[#1a1c1a] sm:text-lg">{routePoint.title}</h3>
+                  <p className="text-sm leading-5 text-[#404943]">{routePoint.subtitle}</p>
                 </div>
 
-                {routePoint.kind === 'finish' ? (
-                  <MdFlag className="shrink-0 text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
-                ) : isLocked ? (
-                  <MdLock className="shrink-0 text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
-                ) : routePoint.state === 'active' ? (
-                  <MdQrCode2 className="shrink-0 text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
-                ) : (
-                  <MdChevronRight className="shrink-0 text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
-                )}
+                <div className="ml-auto flex shrink-0 self-center sm:self-auto">
+                  {routePoint.kind === 'finish' ? (
+                    <MdFlag className="text-xl text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
+                  ) : isLocked ? (
+                    <MdLock className="text-xl text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
+                  ) : routePoint.state === 'active' ? (
+                    <MdQrCode2 className="text-xl text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
+                  ) : (
+                    <MdChevronRight className="text-xl text-[#bfc9c1] transition-colors group-hover:text-[#0f5238]" />
+                  )}
+                </div>
               </div>
             )
           })}

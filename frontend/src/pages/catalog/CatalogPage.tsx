@@ -198,7 +198,7 @@ export function CatalogPage() {
               return (
                 <article
                   key={route.id}
-                  className="overflow-hidden rounded-[2rem] border border-[#dfe5dc] bg-white shadow-[0_16px_40px_rgba(15,82,56,0.08)]"
+                  className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-[#dfe5dc] bg-white shadow-[0_16px_40px_rgba(15,82,56,0.08)]"
                 >
                   <div className="relative h-52">
                     <img src={route.image} alt={route.title} className="h-full w-full object-cover" />
@@ -213,7 +213,7 @@ export function CatalogPage() {
                       <h3 className="mt-2 text-2xl font-extrabold">{route.title}</h3>
                     </div>
                   </div>
-                  <div className="space-y-5 p-6">
+                  <div className="flex flex-1 flex-col gap-5 p-6">
                     <p className="text-sm leading-6 text-[#404943]">{route.description}</p>
                     <div className="flex flex-wrap gap-2 text-sm font-semibold text-[#404943]">
                       {authToken && route.purchased ? (
@@ -223,7 +223,7 @@ export function CatalogPage() {
                         <span className="rounded-full bg-[#0f5238] px-3 py-2 text-white">Активный</span>
                       ) : null}
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="mt-auto flex flex-wrap gap-3">
                       {route.isActive ? (
                         <Link
                           to="/route"
@@ -231,7 +231,7 @@ export function CatalogPage() {
                         >
                           Продолжить маршрут
                         </Link>
-                      ) : canPreview ? (
+                      ) : canPreview && (
                         <button
                           type="button"
                           onClick={() => void handlePreviewRoute(route.id)}
@@ -240,7 +240,7 @@ export function CatalogPage() {
                         >
                           {isRouteActionLoading ? 'Открываем...' : 'Открыть маршрут'}
                         </button>
-                      ) : null}
+                      )}
 
                       {canSelect ? (
                         <button

@@ -30,6 +30,7 @@ const fallbackRoute: RouteDetails = {
   city: '',
   title: 'Выберите маршрут в каталоге',
   description: 'Маршрут появится здесь после загрузки данных с сервера.',
+  image: '',
   accessType: 'free',
   priceRub: 0,
   priceLabel: 'Free',
