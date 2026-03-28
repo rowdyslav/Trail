@@ -1,54 +1,32 @@
 import { MdCheckCircle, MdChevronRight, MdLock, MdRadioButtonChecked } from 'react-icons/md'
+import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
 import { RouteMap } from '../../features/navigation/ui/RouteMap'
-import type { Landmark } from '../../shared/types/game'
-
-const routeLandmarks: Landmark[] = [
-  {
-    id: 'uspensky-cathedral',
-    title: 'Успенский собор',
-    subtitle: 'Главный собор Рязанского кремля и один из символов города',
-    image:
-      'https://commons.wikimedia.org/wiki/Special:FilePath/%D0%92%D1%85%D0%BE%D0%B4%20%D0%B2%20%D0%A3%D1%81%D0%BF%D0%B5%D0%BD%D1%81%D0%BA%D0%B8%D0%B9%20%D1%81%D0%BE%D0%B1%D0%BE%D1%80%20(%D0%A0%D1%8F%D0%B7%D0%B0%D0%BD%D1%81%D0%BA%D0%B8%D0%B9%20%D0%9A%D1%80%D0%B5%D0%BC%D0%BB%D1%8C).jpg',
-    state: 'visited',
-  },
-  {
-    id: 'cathedral-bell-tower',
-    title: 'Соборная колокольня',
-    subtitle: 'Самая заметная вертикаль кремля и ключевая точка маршрута',
-    image:
-      'https://commons.wikimedia.org/wiki/Special:FilePath/%D0%A1%D0%BE%D0%B1%D0%BE%D1%80%D0%BD%D0%B0%D1%8F%20%D0%BA%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%D0%BB%D1%8C%D0%BD%D1%8F%2020220630%20130157.jpg',
-    state: 'active',
-  },
-  {
-    id: 'oleg-palace',
-    title: 'Дворец Олега',
-    subtitle: 'Крупнейшее гражданское здание кремля с музейными экспозициями',
-    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Oleg_palace_1.JPG',
-    state: 'locked',
-  },
-]
 
 export function RoutePage() {
+  const route = useRouteProgressStore((state) => state.route)
+  const routeLandmarks = useRouteProgressStore((state) => state.routeLandmarks)
+
   return (
-    <main className="mx-auto max-w-2xl space-y-8 px-6 pt-6 pb-32">
+    <main className="mx-auto max-w-2xl space-y-8 px-6 pb-32 pt-6">
       <section className="space-y-4">
         <div className="flex items-end justify-between">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 rounded-full bg-[#0f5238] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
               Маршрут активен
             </div>
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-[#1a1c1a]">
-              Прогулка по Рязанскому Кремлю
-            </h1>
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-[#1a1c1a]">{route.title}</h1>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-2xl font-black text-[#0f5238]">3/5</span>
+            <span className="text-2xl font-black text-[#0f5238]">{route.checkpoints.length}</span>
             <span className="text-[10px] font-bold uppercase tracking-tighter text-[#404943]">точек</span>
           </div>
         </div>
 
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#e2e3df]">
-          <div className="h-full w-[60%] rounded-full bg-[#0f5238] shadow-[0_0_12px_rgba(15,82,56,0.2)]" />
+          <div
+            className="h-full rounded-full bg-[#0f5238] shadow-[0_0_12px_rgba(15,82,56,0.2)]"
+            style={{ width: `${route.progress}%` }}
+          />
         </div>
       </section>
 
@@ -56,8 +34,10 @@ export function RoutePage() {
 
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight text-[#1a1c1a]">Достопримечательности</h2>
-          <span className="text-sm font-medium text-[#0f5238]">Показать все</span>
+          <h2 className="text-xl font-bold tracking-tight text-[#1a1c1a]">Точки маршрута</h2>
+          <span className="text-sm font-medium text-[#0f5238]">
+            {route.accessType === 'paid' ? 'Платный' : 'Бесплатный'}
+          </span>
         </div>
 
         <div className="grid gap-4">

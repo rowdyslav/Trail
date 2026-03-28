@@ -1,15 +1,4 @@
-﻿import type {
-  CatalogRoute,
-  DailyMission,
-  Landmark,
-  PrizeCatalogItem,
-  ProfileStat,
-  RedemptionRequest,
-  RouteDetails,
-  SuggestedRoute,
-  UpgradeItem,
-  UserProfile,
-} from '../../../shared/types/game'
+import type { CatalogRoute, ProfileStat, RedemptionRequest, RouteDetails, UpgradeItem, UserProfile } from '../../../shared/types/game'
 
 export const mockRoute: Omit<RouteDetails, 'progress'> = {
   id: 'ryazan-kremlin',
@@ -17,6 +6,7 @@ export const mockRoute: Omit<RouteDetails, 'progress'> = {
   title: 'Прогулка по Рязанскому кремлю',
   description:
     'Небольшой городской маршрут с чекпоинтами, QR-сканированием и наградами в профиле для простого MVP-сценария.',
+  accessType: 'free',
   currentLegLabel: 'От собора к смотровой у крепостной стены',
   estimatedTime: '35 мин',
   distance: '2,4 км',
@@ -67,13 +57,9 @@ export const mockUser: UserProfile = {
   id: 'user-explorer-ryazan',
   name: 'Исследователь Рязани',
   title: 'Старший проводник',
-  level: 12,
-  xp: 1250,
   rewardPointsBalance: 480,
   streakDays: 12,
   streakKey: 'explorer',
-  nextLevelXp: 2000,
-  avatarStage: 2,
   badges: [
     { id: 'story', title: 'Любитель истории', tone: 'bg-amber-100 text-amber-900' },
     { id: 'walker', title: '24 локации', tone: 'bg-emerald-100 text-emerald-900' },
@@ -134,93 +120,7 @@ export const catalogRoutes: CatalogRoute[] = [
   },
 ]
 
-export const prizeCatalog: PrizeCatalogItem[] = [
-  {
-    id: 'coffee',
-    title: 'Кофе в кафе-партнёре',
-    description: 'Один горячий напиток из меню партнёра на стойке выдачи.',
-    pointsCost: 150,
-    isActive: true,
-  },
-  {
-    id: 'stickers',
-    title: 'Набор стикеров Trail',
-    description: 'Небольшой сувенирный набор с фирменными стикерами.',
-    pointsCost: 220,
-    isActive: true,
-  },
-  {
-    id: 'premium-discount',
-    title: 'Скидка на премиум-маршрут',
-    description: 'Скидочный ваучер, который можно применить к платному маршруту.',
-    pointsCost: 300,
-    isActive: true,
-  },
-]
-
 export const initialRedemptionRequests: RedemptionRequest[] = []
-
-export const dailyMissions: DailyMission[] = [
-  {
-    id: 'monuments',
-    title: 'Посетить 3 достопримечательности',
-    subtitle: 'Выполнено 1/3',
-    accent: 'bg-emerald-100 text-emerald-900',
-    icon: 'castle',
-  },
-  {
-    id: 'scan-park',
-    title: 'Сканировать чекпоинт в парке',
-    subtitle: 'Награда: +50 XP',
-    accent: 'bg-amber-100 text-amber-900',
-    icon: 'camera',
-  },
-]
-
-export const suggestedRoutes: SuggestedRoute[] = [
-  {
-    id: 'cathedral-park',
-    title: 'Тайны Соборного парка',
-    distanceLabel: '450 м отсюда',
-    image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'esenin',
-    title: 'По следам Есенина',
-    distanceLabel: '1,2 км отсюда',
-    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'art-walk',
-    title: 'Арт-прогулка',
-    distanceLabel: '2,5 км отсюда',
-    image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=800&q=80',
-  },
-]
-
-export const landmarks: Landmark[] = [
-  {
-    id: 'furazhira-gate',
-    title: 'Фуражирские ворота',
-    subtitle: 'Исторический вход в служебный квартал',
-    image: 'https://images.unsplash.com/photo-1514894786521-26d28d4d32c2?auto=format&fit=crop&w=800&q=80',
-    state: 'visited',
-  },
-  {
-    id: 'cathedral-complex',
-    title: 'Соборный комплекс',
-    subtitle: 'Центральная площадь и ключевой чекпоинт маршрута',
-    image: 'https://images.unsplash.com/photo-1575908539614-ff89490f4a78?auto=format&fit=crop&w=800&q=80',
-    state: 'active',
-  },
-  {
-    id: 'secret-arch',
-    title: 'Тайная арка',
-    subtitle: 'Скрытая точка за крепостной стеной',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    state: 'locked',
-  },
-]
 
 export const profileStats: ProfileStat[] = [
   { id: 'visited', label: 'Локаций\nпосещено', value: '24', icon: 'castle' },
@@ -234,39 +134,3 @@ export const upgradeItems: UpgradeItem[] = [
   { id: 'map', title: 'Древняя карта', icon: 'map', tone: 'bg-[#b1f0ce] text-[#0f5238]' },
   { id: 'locked', title: 'Уровень 15', icon: 'lock', tone: 'bg-[#e2e3df] text-[#707973]', locked: true },
 ]
-
-export const avatarStages = [
-  {
-    id: 0,
-    title: 'Новичок',
-    description: 'Первый шаг в городском квесте.',
-    accent: 'from-slate-300 to-slate-200',
-    ring: 'border-slate-300',
-    emoji: 'guide',
-  },
-  {
-    id: 1,
-    title: 'Исследователь',
-    description: 'Уже уверенно держит темп на маршруте.',
-    accent: 'from-emerald-200 to-lime-100',
-    ring: 'border-emerald-300',
-    emoji: 'explorer',
-  },
-  {
-    id: 2,
-    title: 'Проводник',
-    description: 'Открывает редкие точки и поддерживает серию.',
-    accent: 'from-emerald-400 to-teal-200',
-    ring: 'border-emerald-500',
-    emoji: 'mushroom',
-  },
-  {
-    id: 3,
-    title: 'Мастер маршрута',
-    description: 'Финальный этап развития MVP-профиля.',
-    accent: 'from-amber-300 to-orange-200',
-    ring: 'border-amber-400',
-    emoji: 'crown',
-  },
-] as const
-

@@ -81,11 +81,11 @@ export function AuthPage() {
         </div>
 
         <div className="mt-6 space-y-4">
-          {isSessionExpired ? (
+          {isSessionExpired &&
             <div className="rounded-[1rem] border border-[#f0d7a6] bg-[#fff8e8] px-4 py-3 text-sm font-medium text-[#7a5a12]">
-              Срок действия сессии истёк. Зарегистрируйтесь снова, чтобы продолжить.
+              Срок действия сессии истёк. Войдите снова, чтобы продолжить.
             </div>
-          ) : null}
+          }
 
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-[#404943]">Email</span>
