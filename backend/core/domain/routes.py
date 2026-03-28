@@ -211,19 +211,15 @@ async def mark_route_completed(
             user_id=user.id,
             route_id=route.id,
             completed_at=completed_at,
-            reward_points_granted=bonus,
         ).insert()
     except DuplicateKeyError:
         progress.is_completed = True
         progress.completed_at = progress.completed_at or completed_at
-        if progress.completion_bonus_granted == 0 and bonus > 0:
-            progress.completion_bonus_granted = bonus
         user.active_route_id = None
         return 0
 
     progress.is_completed = True
     progress.completed_at = completed_at
-    progress.completion_bonus_granted = bonus
     user.active_route_id = None
     if bonus > 0:
         user.reward_points += bonus

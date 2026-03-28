@@ -5,7 +5,6 @@ from core.domain.rewards import RouteType
 from core.models import (
     Admin,
     Place,
-    PlaceCompletionHistory,
     Prize,
     RedemptionCode,
     Route,
@@ -227,7 +226,6 @@ async def seed_data() -> None:
 
 
 async def reset_gameplay_data() -> None:
-    await PlaceCompletionHistory.get_pymongo_collection().delete_many({})
     await RoutePlaceCompletion.get_pymongo_collection().delete_many({})
     await UserRouteProgress.get_pymongo_collection().delete_many({})
     await RouteCompletion.get_pymongo_collection().delete_many({})
@@ -247,7 +245,6 @@ async def init_db() -> None:
             Route,
             Place,
             Prize,
-            PlaceCompletionHistory,
             RoutePlaceCompletion,
             UserRouteProgress,
             RouteCompletion,

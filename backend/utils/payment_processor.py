@@ -56,9 +56,6 @@ class YooKassaClient:
         payment = self.payment_api.find_one(payment_id)
         return payment.status
 
-    def get_payment(self, payment_id: str) -> Any:
-        return self.payment_api.find_one(payment_id)
-
 
 class PaymentProcessor:
     def __init__(self) -> None:

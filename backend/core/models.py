@@ -156,18 +156,6 @@ class Prize(Document):
         )
 
 
-class PlaceCompletionHistory(Document):
-    user_id: PydanticObjectId
-    place_id: PydanticObjectId
-    completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    class Settings:
-        name = "place_completion_history"
-        indexes = [
-            IndexModel([("user_id", 1), ("place_id", 1)], unique=True),
-        ]
-
-
 class RoutePlaceCompletion(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
@@ -188,7 +176,6 @@ class UserRouteProgress(Document):
     scanned_place_ids: list[PydanticObjectId] = Field(default_factory=list)
     is_completed: bool = False
     completed_at: datetime | None = None
-    completion_bonus_granted: int = 0
 
     class Settings:
         name = "user_route_progress"
@@ -201,7 +188,6 @@ class RouteCompletion(Document):
     user_id: PydanticObjectId
     route_id: PydanticObjectId
     completed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    reward_points_granted: int = 0
 
     class Settings:
         name = "route_completions"
