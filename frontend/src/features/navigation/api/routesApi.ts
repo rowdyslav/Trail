@@ -16,7 +16,6 @@ interface PlaceRead {
   reward_points: number
   latitude: number
   longitude: number
-  activation_token?: string
 }
 
 export interface RouteRead {
@@ -28,14 +27,11 @@ export interface RouteRead {
   price_rub: number
   places_total: number
   places: PlaceRead[]
-}
-
-export interface RouteViewerStateRead {
-  route_id: string
-  is_purchased: boolean
-  is_active: boolean
-  is_completed: boolean
-  scanned_places_count: number
+  is_purchased?: boolean | null
+  is_available?: boolean | null
+  is_active?: boolean | null
+  is_completed?: boolean | null
+  scanned_places_count?: number | null
 }
 
 interface RouteSelectionRead {
@@ -43,11 +39,11 @@ interface RouteSelectionRead {
   is_active: boolean
 }
 
-interface RoutePurchaseRequest {
+interface RoutePaymentRequest {
   return_url: string
 }
 
-interface RoutePurchaseRead {
+export interface PaymentRead {
   route_id: string
   payment_id?: string | null
   payment_status: string
@@ -60,6 +56,7 @@ interface RoutePurchaseRead {
 
 export interface RouteWithViewerState extends RouteRead {
   is_purchased: boolean
+  is_available: boolean
   is_active: boolean
   is_completed: boolean
   scanned_places_count: number
@@ -89,7 +86,7 @@ const getRouteImage = (accessType: RouteAccessType, index: number) => {
 const guessCity = (description: string) => {
   const normalized = description.toLowerCase()
 
-  if (normalized.includes('рязань')) {
+  if (normalized.includes('рязан')) {
     return 'Рязань'
   }
 
@@ -173,7 +170,6 @@ const mapPlaceToRoutePoint = (route: RouteWithViewerState, place: PlaceRead, ind
     longitude: place.longitude,
     state,
     kind,
-    activationToken: kind === 'qr' ? place.activation_token ?? null : null,
   }
 }
 
@@ -188,11 +184,11 @@ const mapPlaceToCheckpoint = (route: RouteWithViewerState, place: PlaceRead, ind
     hint:
       kind === 'finish'
         ? 'Дойдите до финальной точки маршрута, чтобы завершить прогулку.'
-        : 'Точка маршрута синхронизирована с backend и готова к активации.',
+        : 'Точка маршрута активируется физическим QR-кодом на локации.',
     storyBeat:
       kind === 'finish'
         ? 'Финальная точка замыкает маршрут и завершает прохождение.'
-        : 'Точка маршрута синхронизирована с backend и ждёт активации.',
+        : 'Точка маршрута ждёт активации через QR-код на месте.',
     xp: place.reward_points,
     status: getCheckpointStatus(state),
     reward: {
@@ -210,8 +206,6 @@ const mapRouteToCatalogRoute = (route: RouteWithViewerState, index: number): Cat
   city: guessCity(route.description),
   title: route.title,
   description: route.description,
-  distanceLabel: getDistanceLabel(route.places_total),
-  durationLabel: getDurationLabel(route.places_total),
   image: getRouteImage(route.route_type, index),
   accessType: route.route_type,
   priceLabel: route.route_type === 'free' ? 'Free' : `${route.price_rub} ₽`,
@@ -250,32 +244,22 @@ const mapRouteToRouteDetails = (route: RouteWithViewerState): RouteDetails => {
   }
 }
 
-const withDefaultViewerState = (route: RouteRead): RouteWithViewerState => ({
-  ...route,
-  is_purchased: route.route_type === 'free',
-  is_active: false,
-  is_completed: false,
-  scanned_places_count: 0,
-})
-
-const mergeViewerState = (route: RouteRead, state?: RouteViewerStateRead): RouteWithViewerState => {
-  const fallback = withDefaultViewerState(route)
-
-  if (!state) {
-    return fallback
-  }
+const normalizeRoute = (route: RouteRead): RouteWithViewerState => {
+  const isPurchased = route.route_type === 'free' || Boolean(route.is_purchased)
+  const isCompleted = Boolean(route.is_completed)
 
   return {
-    ...fallback,
-    is_purchased: state.is_purchased || route.route_type === 'free',
-    is_active: state.is_active,
-    is_completed: state.is_completed,
-    scanned_places_count: state.scanned_places_count,
+    ...route,
+    is_purchased: isPurchased,
+    is_available: route.is_available ?? isPurchased,
+    is_active: Boolean(route.is_active),
+    is_completed: isCompleted,
+    scanned_places_count: route.scanned_places_count ?? 0,
   }
 }
 
 export const routesApi = {
-  async list(routeType?: RouteAccessType | null) {
+  async list(routeType?: RouteAccessType | null, token?: string | null) {
     const searchParams = new URLSearchParams()
 
     if (routeType) {
@@ -286,21 +270,11 @@ export const routesApi = {
 
     return apiRequest<RouteRead[]>(`/routes${query ? `?${query}` : ''}`, {
       method: 'GET',
-    })
-  },
-  async read(routeId: string) {
-    return apiRequest<RouteRead>(`/routes/${routeId}`, {
-      method: 'GET',
-    })
-  },
-  async listViewerStates(token: string) {
-    return apiRequest<RouteViewerStateRead[]>('/routes/viewer-states', {
-      method: 'GET',
       token,
     })
   },
-  async readViewerState(routeId: string, token: string) {
-    return apiRequest<RouteViewerStateRead>(`/routes/${routeId}/viewer-state`, {
+  async read(routeId: string, token?: string | null) {
+    return apiRequest<RouteRead>(`/routes/${routeId}`, {
       method: 'GET',
       token,
     })
@@ -311,8 +285,8 @@ export const routesApi = {
       token,
     })
   },
-  async purchase(routeId: string, token: string, payload: RoutePurchaseRequest) {
-    return apiRequest<RoutePurchaseRead>(`/routes/${routeId}/purchase`, {
+  async createPayment(routeId: string, token: string, payload: RoutePaymentRequest) {
+    return apiRequest<PaymentRead>(`/routes/${routeId}/payments`, {
       method: 'POST',
       token,
       headers: {
@@ -321,23 +295,22 @@ export const routesApi = {
       body: JSON.stringify(payload),
     })
   },
-  async confirmPurchase(routeId: string, token: string) {
-    return apiRequest<RoutePurchaseRead>(`/routes/${routeId}/purchase/confirm`, {
+  async confirmPayment(routeId: string, token: string) {
+    return apiRequest<PaymentRead>(`/routes/${routeId}/payments/confirm`, {
       method: 'POST',
       token,
     })
   },
-  withViewerState(route: RouteRead, state?: RouteViewerStateRead) {
-    return mergeViewerState(route, state)
+  normalize(route: RouteRead) {
+    return normalizeRoute(route)
   },
-  withViewerStates(routes: RouteRead[], viewerStates: RouteViewerStateRead[] = []) {
-    const stateByRouteId = new Map(viewerStates.map((state) => [state.route_id, state]))
-    return routes.map((route) => mergeViewerState(route, stateByRouteId.get(route.id)))
+  normalizeMany(routes: RouteRead[]) {
+    return routes.map(normalizeRoute)
   },
-  toCatalogRoutes(routes: RouteWithViewerState[]) {
-    return routes.map(mapRouteToCatalogRoute)
+  toCatalogRoutes(routes: RouteRead[]) {
+    return routes.map((route, index) => mapRouteToCatalogRoute(normalizeRoute(route), index))
   },
-  toRouteDetails(route: RouteWithViewerState | null) {
-    return route ? mapRouteToRouteDetails(route) : null
+  toRouteDetails(route: RouteRead | null) {
+    return route ? mapRouteToRouteDetails(normalizeRoute(route)) : null
   },
 }

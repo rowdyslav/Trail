@@ -216,8 +216,6 @@ export function CatalogPage() {
                   <div className="space-y-5 p-6">
                     <p className="text-sm leading-6 text-[#404943]">{route.description}</p>
                     <div className="flex flex-wrap gap-2 text-sm font-semibold text-[#404943]">
-                      <span className="rounded-full bg-[#f3f4f0] px-3 py-2">{route.distanceLabel}</span>
-                      <span className="rounded-full bg-[#f3f4f0] px-3 py-2">{route.durationLabel}</span>
                       {authToken && route.purchased ? (
                         <span className="rounded-full bg-[#edf7ee] px-3 py-2 text-[#0f5238]">Доступен</span>
                       ) : null}
