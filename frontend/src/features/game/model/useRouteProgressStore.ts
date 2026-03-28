@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+
 import type { CatalogRoute, RouteAccessType, RouteDetails } from '../../../shared/types/game'
 import { useAuthStore } from '../../auth/model/useAuthStore'
 import { routesApi, type RouteRead, type RouteViewerProfileState } from '../../navigation/api/routesApi'
@@ -45,9 +46,6 @@ const fallbackRoute: RouteDetails = {
   progress: 0,
 }
 
-const getRouteById = (routes: RouteRead[], routeId?: string | null) =>
-  routeId ? routes.find((routeItem) => routeItem.id === routeId) ?? null : null
-
 const getViewerProfileState = (): RouteViewerProfileState | undefined => {
   const { authToken, user } = useAuthStore.getState()
 
@@ -61,11 +59,6 @@ const getViewerProfileState = (): RouteViewerProfileState | undefined => {
   }
 }
 
-const getCurrentActiveRoute = (routes: RouteRead[], viewerState?: RouteViewerProfileState) => {
-  const activeRouteId = routesApi.normalizeMany(routes, viewerState).find((routeItem) => routeItem.is_active)?.id ?? null
-  return getRouteById(routes, activeRouteId)
-}
-
 const readRoutes = async (routeType?: RouteAccessType | null) => {
   const token = useAuthStore.getState().authToken
   return routesApi.list(routeType, token)
@@ -76,42 +69,68 @@ const readRoute = async (routeId: string) => {
   return routesApi.read(routeId, token)
 }
 
-const getResolvedRoute = (
-  routes: RouteRead[],
-  previewRouteId?: string | null,
-  selectedRouteId?: string | null,
-  explicitRoute?: RouteRead | null,
+const getBackendSelectedRouteId = (
+  catalogRoutes: RouteRead[],
   viewerState?: RouteViewerProfileState,
+  selectedRoute?: RouteRead | null,
 ) => {
-  if (explicitRoute) {
-    return explicitRoute
+  if (viewerState?.activeRouteId) {
+    return viewerState.activeRouteId
   }
 
-  return getRouteById(routes, previewRouteId) ?? getRouteById(routes, selectedRouteId) ?? getCurrentActiveRoute(routes, viewerState) ?? null
+  const normalizedSelectedRoute = selectedRoute ? routesApi.normalize(selectedRoute, viewerState) : null
+
+  if (normalizedSelectedRoute?.is_active) {
+    return normalizedSelectedRoute.id
+  }
+
+  return routesApi.normalizeMany(catalogRoutes, viewerState).find((route) => route.is_active)?.id ?? null
 }
 
-const getSyncedCatalogAndRouteState = async (
-  previewRouteId?: string | null,
-  selectedRouteId?: string | null,
-  explicitRouteId?: string | null,
+const getDisplayedRoute = (
+  catalogRoutes: RouteRead[],
+  selectedRouteId: string | null,
+  previewRoute?: RouteRead | null,
+  selectedRoute?: RouteRead | null,
 ) => {
+  if (previewRoute) {
+    return previewRoute
+  }
+
+  if (selectedRoute) {
+    return selectedRoute
+  }
+
+  return selectedRouteId ? catalogRoutes.find((route) => route.id === selectedRouteId) ?? null : null
+}
+
+const ensureProfileSynced = async () => {
+  const result = await useAuthStore.getState().refreshMe()
+
+  if (!result.success) {
+    throw new Error(result.error ?? 'Could not refresh user profile.')
+  }
+}
+
+const getSyncedCatalogAndRouteState = async (previewRouteId?: string | null) => {
   const activeRouteTypeFilter = useRouteProgressStore.getState().activeRouteTypeFilter
   const viewerState = getViewerProfileState()
-  const routesPromise = readRoutes(activeRouteTypeFilter)
-  const routePromise = explicitRouteId ? readRoute(explicitRouteId).catch(() => null) : Promise.resolve(null)
+  const selectedRouteIdFromProfile = viewerState?.activeRouteId ?? null
 
-  const [routes, explicitRoute] = await Promise.all([routesPromise, routePromise])
-  const normalizedExplicitRoute = explicitRoute ? routesApi.normalize(explicitRoute, viewerState) : null
-  const activeRoute = normalizedExplicitRoute?.is_active ? explicitRoute : getCurrentActiveRoute(routes, viewerState)
-  const profileSelectedRouteId = viewerState?.activeRouteId ?? null
-  const nextSelectedRouteId = profileSelectedRouteId ?? activeRoute?.id ?? selectedRouteId ?? null
-  const resolvedRoute = getResolvedRoute(routes, previewRouteId, nextSelectedRouteId, explicitRoute, viewerState)
+  const [catalogRoutes, previewRoute, selectedRoute] = await Promise.all([
+    readRoutes(activeRouteTypeFilter),
+    previewRouteId ? readRoute(previewRouteId).catch(() => null) : Promise.resolve(null),
+    selectedRouteIdFromProfile ? readRoute(selectedRouteIdFromProfile).catch(() => null) : Promise.resolve(null),
+  ])
+
+  const backendSelectedRouteId = getBackendSelectedRouteId(catalogRoutes, viewerState, selectedRoute)
+  const displayedRoute = getDisplayedRoute(catalogRoutes, backendSelectedRouteId, previewRoute, selectedRoute)
 
   return {
-    catalogRoutes: routesApi.toCatalogRoutes(routes, viewerState),
-    route: routesApi.toRouteDetails(resolvedRoute, viewerState) ?? fallbackRoute,
-    selectedRouteId: nextSelectedRouteId,
-    hasRouteSelection: Boolean(nextSelectedRouteId),
+    catalogRoutes: routesApi.toCatalogRoutes(catalogRoutes, viewerState),
+    route: routesApi.toRouteDetails(displayedRoute, viewerState) ?? fallbackRoute,
+    selectedRouteId: backendSelectedRouteId,
+    hasRouteSelection: Boolean(backendSelectedRouteId),
   }
 }
 
@@ -130,26 +149,14 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     useRouteProgressStore.setState({ routeActionError: null })
   },
   clearPreviewRoute: async () => {
-    const { selectedRouteId } = useRouteProgressStore.getState()
-
     useRouteProgressStore.setState({
       isRouteActionLoading: true,
       routeActionError: null,
     })
 
-    if (!selectedRouteId) {
-      useRouteProgressStore.setState({
-        previewRouteId: null,
-        route: fallbackRoute,
-        isRouteActionLoading: false,
-      })
-
-      return { success: true }
-    }
-
     try {
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(null, selectedRouteId, selectedRouteId)),
+        ...(await getSyncedCatalogAndRouteState(null)),
         previewRouteId: null,
         isRouteActionLoading: false,
       })
@@ -175,7 +182,10 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
       hasRouteSelection: false,
       selectedRouteId: null,
       previewRouteId: null,
+      catalogRoutes: [],
+      isCatalogLoading: false,
       isRouteActionLoading: false,
+      catalogError: null,
       routeActionError: null,
       activeRouteTypeFilter: null,
     })
@@ -193,7 +203,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     })
 
     try {
-      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId, state.selectedRouteId)
+      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId)
 
       useRouteProgressStore.setState({
         ...nextState,
@@ -216,7 +226,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
 
     try {
       const state = useRouteProgressStore.getState()
-      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId, state.selectedRouteId)
+      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId)
 
       useRouteProgressStore.setState({
         ...nextState,
@@ -249,10 +259,10 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
 
     try {
       await routesApi.select(routeId, token)
-      await useAuthStore.getState().refreshMe()
+      await ensureProfileSynced()
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        ...(await getSyncedCatalogAndRouteState(null)),
         previewRouteId: null,
         isRouteActionLoading: false,
       })
@@ -335,10 +345,10 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
         throw new Error('Backend did not return a payment page URL for this route payment.')
       }
 
-      await useAuthStore.getState().refreshMe()
+      await ensureProfileSynced()
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        ...(await getSyncedCatalogAndRouteState(null)),
         previewRouteId: null,
         isRouteActionLoading: false,
       })
@@ -378,10 +388,10 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     try {
       await routesApi.confirmPayment(routeId, token)
       await routesApi.select(routeId, token)
-      await useAuthStore.getState().refreshMe()
+      await ensureProfileSynced()
 
       useRouteProgressStore.setState({
-        ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
+        ...(await getSyncedCatalogAndRouteState(null)),
         previewRouteId: null,
         isRouteActionLoading: false,
       })

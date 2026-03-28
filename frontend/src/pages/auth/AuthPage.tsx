@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { useCodeStore } from '../../features/code/model/useCodeStore'
+import { useRouteProgressStore } from '../../features/game/model/useRouteProgressStore'
 
 type AuthMode = 'login' | 'register'
 
@@ -14,6 +15,7 @@ export function AuthPage() {
   const registerUser = useAuthStore((state) => state.registerUser)
   const hydrateActiveCodes = useCodeStore((state) => state.hydrateActiveCodes)
   const fetchPrizeCatalog = useCodeStore((state) => state.fetchPrizeCatalog)
+  const syncRouteStateFromProfile = useRouteProgressStore((state) => state.syncRouteStateFromProfile)
   const [mode, setMode] = useState<AuthMode>(searchParams.get('mode') === 'register' ? 'register' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,6 +44,7 @@ export function AuthPage() {
     }
 
     hydrateActiveCodes(result.profile ?? null)
+    await syncRouteStateFromProfile()
     await fetchPrizeCatalog()
     navigate(nextPath, { replace: true })
   }

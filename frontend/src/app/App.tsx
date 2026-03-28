@@ -44,8 +44,12 @@ export function App() {
     if (sessionKeyRef.current !== sessionKey) {
       resetRouteState()
       sessionKeyRef.current = sessionKey
+
+      if (authToken) {
+        void syncRouteStateFromProfile()
+      }
     }
-  }, [authToken, isAuthReady, resetRouteState, userId])
+  }, [authToken, isAuthReady, resetRouteState, syncRouteStateFromProfile, userId])
 
   return <RouterProvider router={router} />
 }
