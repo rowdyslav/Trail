@@ -99,6 +99,18 @@ DEMO_ROUTES = (
         ),
     },
     {
+        "title": "Центр Рязани",
+        "description": "Небольшой маршрут по главным достопримечательностям центра Рязани.",
+        "route_type": RouteType.FREE,
+        "price_rub": 0,
+        "reward_points_on_completion": 0,
+        "place_refs": (
+            "sobornaya-belltower-002",
+            "pochtovaya-street-003",
+            "ryazan-kremlin-001",
+        ),
+    },
+    {
         "title": "По есенинским местам",
         "description": "Маршрут по знаковым точкам, связанным с Сергеем Есениным и селом Константиново.",
         "route_type": RouteType.PAID,

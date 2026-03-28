@@ -57,6 +57,8 @@ a {
 }
 
 .map-pin-current,
+.map-pin-start,
+.map-pin-qr,
 .map-pin-finish,
 .map-legend-dot {
   display: inline-flex;
@@ -81,6 +83,22 @@ a {
   background: #f4a261;
   border: 3px solid #fff2e2;
   box-shadow: 0 0 0 4px rgba(244, 162, 97, 0.2);
+  color: transparent;
+}
+
+.map-pin-start,
+.map-legend-dot-start {
+  background: #2f6fed;
+  border: 3px solid #e8f0ff;
+  box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.18);
+  color: transparent;
+}
+
+.map-pin-qr,
+.map-legend-dot-qr {
+  background: #1a1c1a;
+  border: 3px solid #eef5ef;
+  box-shadow: 0 0 0 4px rgba(15, 82, 56, 0.14);
   color: transparent;
 }
 

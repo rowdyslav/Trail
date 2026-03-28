@@ -39,6 +39,11 @@
 Сейчас backend используется для:
 - пользовательской авторизации;
 - получения профиля `/me`;
+- публичного каталога маршрутов `/routes`;
+- публичного чтения маршрута `/routes/{route_id}`;
+- чтения viewer state маршрутов `/routes/viewer-states` и `/routes/{route_id}/viewer-state` для авторизованного пользователя;
+- выбора активного маршрута `/routes/{route_id}/select`;
+- покупки и подтверждения покупки маршрута `/routes/{route_id}/purchase` и `/routes/{route_id}/purchase/confirm`;
 - получения призов;
 - создания и отмены redemption code;
 - админской авторизации;
@@ -51,7 +56,7 @@
 - Роутер описывай в `src/app/router.tsx`.
 - Пользовательские страницы должны жить внутри `AppShell`, административные страницы внутри `AdminLayout`.
 - Не вставляй глобальный хидер, футер, нижнюю навигацию или overlay-компоненты прямо в страницы, если они уже подключены в layout.
-- Защищённые пользовательские сценарии реализуй через `src/features/auth/ui/RequireAuth.tsx`.
+- Защищённые пользовательские сценарии реализуй через `src/features/auth/ui/RequireAuth.tsx`, но не закрывай им публичный каталог маршрутов и страницы preview маршрута без отдельной причины.
 - Для активации QR используй один универсальный маршрут: `src/pages/activate/ActivatePointPage.tsx` на путях `/activate/:token` и fallback `/activate?token=...`.
 - Не возвращай scanner overlay и camera-based QR flow без отдельной явной задачи.
 
@@ -59,11 +64,17 @@
 
 - Логику карты держи в `src/features/navigation`.
 - Геолокацию получай через `src/shared/lib/useCurrentGeolocation.ts`.
-- Точки маршрута и destination ids храни в `src/features/navigation/model`.
 - Прогресс маршрута держи в `src/features/game/model/useRouteProgressStore.ts`.
-- Маршруты по карте должны строиться через конфиг точек и данные стора, а не через вшитые координаты в JSX.
+- Источник истины для точек маршрута — backend `places` из `/routes` и `/routes/{route_id}`, смэппленные в `src/features/navigation/api/routesApi.ts`.
+- Не возвращай статический конфиг `routePoints.ts` и не заводи второй источник истины для точек маршрута.
+- Маршрут по карте должен строиться по данным стора и backend-точкам, а не через вшитые координаты в JSX.
+- Первая точка массива `route.routePoints` всегда считается стартом, последняя — финалом маршрута.
+- Геолокация пользователя отображается отдельным маркером и не должна менять порядок построения линии маршрута.
+- Viewer state маршрута (`is_purchased`, `is_active`, `is_completed`, `scanned_places_count`) подмешивай к публичным данным маршрута только через API `viewer-state`, а не вычисляй локально.
+- Post-payment flow для платного маршрута должен оставаться backend-driven: `purchase -> confirm purchase -> auto select -> route page`.
 - Логику активации точки через QR-ссылку держи в `src/features/scan/api/scanApi.ts` и `src/features/scan/model/useActivatePoint.ts`.
 - Не возвращай локальную валидацию QR по `checkpoint.id`: источник истины для активации точки теперь backend.
+- Если backend временно не отдаёт `activation_token`, не генерируй его на клиенте и не подменяй локальной логикой.
 
 ## Redemption и admin flow
 

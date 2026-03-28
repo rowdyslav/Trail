@@ -38,7 +38,7 @@ export function HomePage() {
                 to="/route"
                 className="rounded-xl bg-gradient-to-br from-[#0f5238] to-[#2d6a4f] px-10 py-5 text-center text-lg font-bold text-white shadow-[0_4px_0_0_#062318] transition-all hover:opacity-90 active:translate-y-[2px] active:shadow-none"
               >
-                Продолжить квест
+                {authToken ? 'Продолжить квест' : 'Начать квест'}
               </Link>
               <Link
                 to="/routes"

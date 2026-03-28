@@ -13,7 +13,7 @@
 - обменивает баллы на призы через redemption flow;
 - администратор подтверждает выдачу по коду в отдельной админ-зоне.
 
-Архитектурно проект остаётся frontend-first, но ключевые бизнес-сценарии авторизации, redemption и активации точек маршрута работают через backend API.
+Архитектурно проект остаётся frontend-first в части UI и композиции экранов, но сценарии маршрутов, авторизации, redemption и активации точек маршрута опираются на backend API.
 
 ## Технологический стек
 
@@ -43,7 +43,7 @@
 
 - `home/HomePage.tsx` — главная страница.
 - `catalog/CatalogPage.tsx` — каталог маршрутов.
-- `route/RoutePage.tsx` — экран активного маршрута с картой.
+- `route/RoutePage.tsx` — экран preview или активного маршрута с картой.
 - `activate/ActivatePointPage.tsx` — универсальная страница активации точки по токену из URL.
 - `profile/ProfilePage.tsx` — профиль, прогресс, баллы, активный redemption.
 - `redeem/RedeemPage.tsx` — выбор приза и старт redemption flow.
@@ -79,14 +79,29 @@
 
 #### `features/game`
 
-- `model/useRouteProgressStore.ts` — активный маршрут и каталог маршрутов.
+- `model/useRouteProgressStore.ts` — активный маршрут, публичный каталог маршрутов, preview/selection/purchase flow.
 
-Важно: store больше не валидирует QR-коды локально и не управляет scanner UI.
+`useRouteProgressStore` отвечает за:
+- публичную загрузку каталога через `/routes`;
+- гидрацию viewer state через `/routes/viewer-states` и `/routes/{route_id}/viewer-state`, если у пользователя есть `authToken`;
+- preview маршрута без авторизации;
+- выбор активного маршрута;
+- покупку маршрута, подтверждение покупки и автоматический выбор маршрута после успешного confirm.
+
+Важно: store больше не валидирует QR-коды локально, не управляет scanner UI и не хранит отдельный статический конфиг точек маршрута.
 
 #### `features/navigation`
 
-- `model/routePoints.ts` — конфигурация точек маршрута и destination ids.
+- `api/routesApi.ts` — клиент для публичных route endpoints и auth-only viewer state / select / purchase endpoints, плюс маппинг backend `places` в `RouteDetails`, `RoutePoint`, `CatalogRoute`.
+- `RouteDetails` хранит не только точки и прогресс, но и purchase/viewer состояние для полноценного preview/active экрана маршрута.
 - `ui/RouteMap.tsx` — карта маршрута на `react-leaflet`.
+
+`RouteMap` строит линию маршрута по ordered-цепочке backend-точек:
+- первая точка массива `route.routePoints` — старт;
+- последняя точка массива `route.routePoints` — финал;
+- геолокация пользователя отображается отдельным маркером и не участвует в построении линии;
+- при наличии OSRM используется дорожная геометрия через все waypoints одним запросом;
+- при ошибке OSRM используется fallback polyline по тем же точкам.
 
 #### `features/scan`
 
@@ -111,7 +126,7 @@
 
 ### `src/entities`
 
-- `quest/model/mockData.ts` — mock-данные для маршрута, каталога маршрутов, профиля, наград и витринных блоков.
+- `quest/model/mockData.ts` — витринные mock-данные для профиля, наград и вспомогательных экранов.
 
 ### `src/shared`
 
@@ -134,8 +149,8 @@
 - `/auth` — вход / регистрация
 - `/activate` — fallback universal activation route по query-параметру `token`
 - `/activate/:token` — основной universal activation route
-- `/routes` — каталог маршрутов
-- `/route` — активный маршрут
+- `/routes` — публичный каталог маршрутов
+- `/route` — экран preview или активного маршрута
 - `/profile` — профиль, защищённый `RequireAuth`
 - `/redeem` — выбор приза, защищённый `RequireAuth`
 - `/redeem/confirm` — подтверждение заявки, защищённый `RequireAuth`
@@ -150,13 +165,13 @@
 
 ### Mock data
 
-Основной источник локальных данных — `src/entities/quest/model/mockData.ts`.
+Основной источник локальных витринных данных — `src/entities/quest/model/mockData.ts`.
 
 Из него инициализируются:
-- активный маршрут;
-- каталог маршрутов;
 - базовый профиль по умолчанию до авторизации;
 - витринные и визуальные данные.
+
+Mock-данные больше не являются источником истины для каталога маршрутов и точек маршрута после загрузки данных с backend.
 
 ### API
 
@@ -165,6 +180,13 @@ Backend используется для следующих сценариев:
 - `POST /auth/login`
 - `GET /me`
 - `POST /admin/session`
+- `GET /routes`
+- `GET /routes/{route_id}`
+- `GET /routes/viewer-states`
+- `GET /routes/{route_id}/viewer-state`
+- `POST /routes/{route_id}/select`
+- `POST /routes/{route_id}/purchase`
+- `POST /routes/{route_id}/purchase/confirm`
 - `GET /prizes`
 - `POST /redemptions`
 - `GET /redemptions/{code}`
@@ -197,6 +219,17 @@ Backend используется для следующих сценариев:
 Хранит:
 - `route`
 - `catalogRoutes`
+- `isCatalogLoading`
+- `isRouteActionLoading`
+- `catalogError`
+- `activeRouteTypeFilter`
+
+Инкапсулирует действия:
+- `loadCatalogRoutes`
+- `previewRoute`
+- `selectRoute`
+- `purchaseRoute`
+- `confirmRoutePurchase`
 
 ### `useRewardStore`
 
@@ -227,16 +260,29 @@ Backend используется для следующих сценариев:
 6. Frontend показывает одно из состояний: `loading`, `success`, `duplicate`, `invalid`, `unauthorized`, `error`.
 7. При успехе `useAuthStore` синхронизирует streak и reward points пользователя из backend-ответа.
 
-### 2. Пользовательская авторизация
+### 2. Каталог маршрутов, preview, выбор и покупка
+
+1. Пользователь открывает `/routes`.
+2. `CatalogPage` вызывает `loadCatalogRoutes` из `useRouteProgressStore`.
+3. Store получает публичные маршруты через `GET /routes`.
+4. Если у пользователя есть `authToken`, store дополнительно читает `/routes/viewer-states` и подмешивает `is_purchased`, `is_active`, `is_completed`, `scanned_places_count`.
+5. Пользователь может открыть preview маршрута без авторизации через `previewRoute` и перейти на `/route`.
+6. Авторизованный пользователь может выбрать доступный маршрут через `POST /routes/{route_id}/select`.
+7. Для платного маршрута запускается `POST /routes/{route_id}/purchase`; если backend вернул `confirmation_url`, пользователь уходит на оплату.
+8. После возврата на `/routes?purchase_route_id=...` или `/route?purchase_route_id=...` фронтенд вызывает `confirmRoutePurchase`.
+9. Store подтверждает покупку через `/purchase/confirm`, затем сразу вызывает `/select`, повторно синхронизирует каталог и конкретный маршрут.
+10. Пользователь попадает на `/route` уже с активным и доступным маршрутом.
+
+### 3. Пользовательская авторизация
 
 1. Пользователь открывает `/auth`.
 2. Страница вызывает `loginUser` или `registerUser` из `useAuthStore`.
 3. Store обращается к `authApi`.
 4. Access token сохраняется в `localStorage`.
-5. После ответа auth flow гидратирует профиль и данные redemption.
+5. После ответа auth flow гидратирует профиль и зависимые пользовательские данные, включая viewer state маршрутов и redemption.
 6. Защищённые страницы становятся доступны через `RequireAuth`.
 
-### 3. Пользовательский redemption flow
+### 4. Пользовательский redemption flow
 
 1. Пользователь открывает `/redeem`.
 2. `useRedemptionStore` получает каталог призов из backend `/prizes`.
@@ -247,7 +293,7 @@ Backend используется для следующих сценариев:
 7. Активный код также доступен в профиле.
 8. При необходимости пользователь может отменить текущий код через `DELETE /redemptions/{code}`.
 
-### 4. Админский redemption flow
+### 5. Админский redemption flow
 
 1. Администратор входит через `/admin/login`.
 2. `useAdminStore` получает token через `/admin/session`.
@@ -267,6 +313,7 @@ Backend используется для следующих сценариев:
 Отдельно важно сохранять границы между store:
 - auth не должен держать admin session;
 - route progress не должен валидировать QR локально;
+- route progress не должен возвращаться к статическому `routePoints.ts` или локальному конфигу маршрутов;
 - scan feature не должна возвращаться к camera overlay без новой задачи;
 - reward modal не должен знать про redemption или admin flow;
 - admin redemption actions не должны жить в пользовательском redemption store.
@@ -278,4 +325,10 @@ Backend используется для следующих сценариев:
 - account: регистрация, логин, профиль, streak, аватар, прогресс;
 - rewards: баллы, redemption code, админ-подтверждение выдачи.
 
-Последний крупный архитектурный шаг — отказ от in-app scanner UI в пользу одного backend-driven activation route. Любые новые изменения должны поддерживать этот подход, а не возвращать проект к camera-overlay и локальной валидации QR.
+Последние архитектурные шаги:
+- отказ от in-app scanner UI в пользу одного backend-driven activation route;
+- перевод каталога и preview маршрутов на публичные backend endpoints;
+- перевод точек карты на backend-driven `places` без статического route config;
+- отделение публичных route-данных от auth-only viewer state.
+
+Любые новые изменения должны поддерживать этот подход, а не возвращать проект к camera-overlay, локальной валидации QR или второму источнику истины для маршрутов.

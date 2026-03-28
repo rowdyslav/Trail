@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MdOpenInNew, MdRefresh } from 'react-icons/md'
+import { useRouteProgressStore } from '../../game/model/useRouteProgressStore'
 import { useCurrentGeolocation } from '../../../shared/lib/useCurrentGeolocation'
-import {
-  DEFAULT_NAVIGATION_DESTINATION,
-  RoutePointId,
-  routePoints,
-} from '../model/routePoints'
 
-interface RouteMapProps {
-  destinationId?: RoutePointId
-}
+type MapPosition = [number, number]
 
-function createMarkerIcon(kind: 'current' | 'finish') {
-  const iconClass = kind === 'current' ? 'map-pin-current' : 'map-pin-finish'
+const DEFAULT_CENTER: MapPosition = [54.6299, 39.7416]
+
+function createMarkerIcon(kind: 'current' | 'start' | 'qr' | 'finish') {
+  const iconClass =
+    kind === 'current'
+      ? 'map-pin-current'
+      : kind === 'start'
+        ? 'map-pin-start'
+        : kind === 'qr'
+          ? 'map-pin-qr'
+          : 'map-pin-finish'
 
   return L.divIcon({
     className: 'map-pin-wrapper',
@@ -26,14 +30,22 @@ function createMarkerIcon(kind: 'current' | 'finish') {
   })
 }
 
-function FitRouteBounds({ points }: { points: [number, number][] }) {
+function FitRouteBounds({ points, fallbackCenter }: { points: MapPosition[]; fallbackCenter: MapPosition }) {
   const map = useMap()
 
   useEffect(() => {
     if (points.length > 1) {
       map.fitBounds(points, { padding: [40, 40] })
+      return
     }
-  }, [map, points])
+
+    if (points.length === 1) {
+      map.setView(points[0], 16)
+      return
+    }
+
+    map.setView(fallbackCenter, 13)
+  }, [fallbackCenter, map, points])
 
   return null
 }
@@ -48,53 +60,84 @@ function RemoveLeafletPrefix() {
   return null
 }
 
-function normalizeRouteCoordinates(
-  coordinates: [number, number][],
-  fallbackStart: [number, number],
-  fallbackEnd: [number, number],
-) {
-  if (coordinates.length > 1) {
-    return coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number])
+const toMapPosition = (latitude: number, longitude: number): MapPosition => [latitude, longitude]
+
+const normalizeRouteCoordinates = (coordinates: [number, number][]) =>
+  coordinates.map(([longitude, latitude]) => [latitude, longitude] as MapPosition)
+
+const getFallbackPath = (waypoints: MapPosition[]) => waypoints
+
+const getRouteLink = (positions: MapPosition[]) => {
+  if (positions.length < 2) {
+    return 'https://www.openstreetmap.org'
   }
 
-  return [fallbackStart, fallbackEnd]
+  const start = positions[0]
+  const finish = positions[positions.length - 1]
+
+  return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${start[0]}%2C${start[1]}%3B${finish[0]}%2C${finish[1]}`
 }
 
-export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: RouteMapProps) {
+export function RouteMap() {
+  const route = useRouteProgressStore((state) => state.route)
   const { coordinates, error, isLoading, refresh } = useCurrentGeolocation({
     enableHighAccuracy: true,
     timeout: 8000,
     maximumAge: 60000,
   })
 
-  const routeStart = routePoints[RoutePointId.RouteStart]
-  const destination = routePoints[destinationId]
-
-  const [routePath, setRoutePath] = useState<[number, number][]>([
-    [routeStart.latitude, routeStart.longitude],
-    [destination.latitude, destination.longitude],
-  ])
+  const [routePath, setRoutePath] = useState<MapPosition[]>([])
   const [routeError, setRouteError] = useState<string | null>(null)
   const [isRouteLoading, setIsRouteLoading] = useState(true)
 
-  const currentPoint = coordinates ?? routeStart
-  const currentLatitude = currentPoint.latitude
-  const currentLongitude = currentPoint.longitude
-  const destinationLatitude = destination.latitude
-  const destinationLongitude = destination.longitude
-  const currentLatLng: [number, number] = [currentLatitude, currentLongitude]
-  const destinationLatLng: [number, number] = [destinationLatitude, destinationLongitude]
+  const currentLatLng = useMemo(
+    () => (coordinates ? toMapPosition(coordinates.latitude, coordinates.longitude) : null),
+    [coordinates],
+  )
+
+  const routePointPositions = useMemo(
+    () => route.routePoints.map((routePoint) => toMapPosition(routePoint.latitude, routePoint.longitude)),
+    [route.routePoints],
+  )
+
+  const routingWaypoints = useMemo(() => routePointPositions, [routePointPositions])
+
+  const boundsPoints = useMemo(
+    () => (routePointPositions.length ? routePointPositions : currentLatLng ? [currentLatLng] : []),
+    [currentLatLng, routePointPositions],
+  )
+
+  const mapCenter = useMemo(
+    () => routePointPositions[0] ?? currentLatLng ?? DEFAULT_CENTER,
+    [currentLatLng, routePointPositions],
+  )
+
+  const finishPoint = route.routePoints[route.routePoints.length - 1] ?? null
 
   useEffect(() => {
     const controller = new AbortController()
 
     async function loadRoute() {
-      setIsRouteLoading(true)
       setRouteError(null)
 
+      if (routingWaypoints.length === 0) {
+        setRoutePath([])
+        setIsRouteLoading(false)
+        return
+      }
+
+      if (routingWaypoints.length === 1) {
+        setRoutePath(routingWaypoints)
+        setIsRouteLoading(false)
+        return
+      }
+
+      setIsRouteLoading(true)
+
       try {
+        const waypointQuery = routingWaypoints.map(([latitude, longitude]) => `${longitude},${latitude}`).join(';')
         const response = await fetch(
-          `https://router.project-osrm.org/route/v1/foot/${currentLongitude},${currentLatitude};${destinationLongitude},${destinationLatitude}?overview=full&geometries=geojson`,
+          `https://router.project-osrm.org/route/v1/foot/${waypointQuery}?overview=full&geometries=geojson`,
           { signal: controller.signal },
         )
 
@@ -107,23 +150,19 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
         }
 
         const geometry = data.routes?.[0]?.geometry?.coordinates ?? []
-        setRoutePath(
-          normalizeRouteCoordinates(
-            geometry,
-            [currentLatitude, currentLongitude],
-            [destinationLatitude, destinationLongitude],
-          ),
-        )
+
+        if (geometry.length < 2) {
+          throw new Error('Маршрут вернул неполную геометрию')
+        }
+
+        setRoutePath(normalizeRouteCoordinates(geometry))
       } catch {
         if (controller.signal.aborted) {
           return
         }
 
-        setRoutePath([
-          [currentLatitude, currentLongitude],
-          [destinationLatitude, destinationLongitude],
-        ])
-        setRouteError('Не удалось загрузить маршрут по дорогам, показан упрощенный путь.')
+        setRoutePath(getFallbackPath(routingWaypoints))
+        setRouteError('Не удалось построить путь по дорогам. Показана упрощённая линия маршрута.')
       } finally {
         if (!controller.signal.aborted) {
           setIsRouteLoading(false)
@@ -134,14 +173,13 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
     void loadRoute()
 
     return () => controller.abort()
-  }, [currentLatitude, currentLongitude, destinationLatitude, destinationLongitude])
+  }, [routingWaypoints])
 
   const currentIcon = useMemo(() => createMarkerIcon('current'), [])
+  const startIcon = useMemo(() => createMarkerIcon('start'), [])
+  const qrIcon = useMemo(() => createMarkerIcon('qr'), [])
   const finishIcon = useMemo(() => createMarkerIcon('finish'), [])
-
-  const openStreetMapLink = coordinates
-    ? `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${coordinates.latitude}%2C${coordinates.longitude}%3B${destinationLatitude}%2C${destinationLongitude}`
-    : `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${routeStart.latitude}%2C${routeStart.longitude}%3B${destinationLatitude}%2C${destinationLongitude}`
+  const openStreetMapLink = useMemo(() => getRouteLink(routingWaypoints), [routingWaypoints])
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-[#bfc9c1]/20 bg-white shadow-[0_20px_50px_rgba(15,82,56,0.08)]">
@@ -184,26 +222,64 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-[#1a1c1a]">Подготавливаем карту и строим маршрут по дорогам</p>
-              <p className="text-sm text-[#5a645d]">Карта появится сразу после загрузки маршрута.</p>
+              <p className="text-sm font-semibold text-[#1a1c1a]">Подготавливаем карту и строим маршрут по точкам</p>
+              <p className="text-sm text-[#5a645d]">Карта появится сразу после загрузки выбранного маршрута.</p>
             </div>
           </div>
         ) : (
-          <MapContainer center={currentLatLng} zoom={16} scrollWheelZoom className="h-full w-full">
+          <MapContainer center={mapCenter} zoom={16} scrollWheelZoom className="h-full w-full">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
             <RemoveLeafletPrefix />
-            <Polyline positions={routePath} pathOptions={{ color: '#0f5238', weight: 5, opacity: 0.85 }} />
-            <Marker position={currentLatLng} icon={currentIcon}>
-              <Popup>Текущее местоположение</Popup>
-            </Marker>
-            <Marker position={destinationLatLng} icon={finishIcon}>
-              <Popup>{destination.label}</Popup>
-            </Marker>
-            <FitRouteBounds points={routePath} />
+            {routePath.length > 1 ? (
+              <Polyline positions={routePath} pathOptions={{ color: '#0f5238', weight: 5, opacity: 0.85 }} />
+            ) : null}
+            {currentLatLng ? (
+              <Marker position={currentLatLng} icon={currentIcon}>
+                <Popup>Текущее местоположение</Popup>
+              </Marker>
+            ) : null}
+            {route.routePoints.map((routePoint, index) => {
+              const lastIndex = route.routePoints.length - 1
+              const isFirstPoint = index === 0
+              const isLastPoint = index === lastIndex
+
+              return (
+                <Marker
+                  key={routePoint.id}
+                  position={toMapPosition(routePoint.latitude, routePoint.longitude)}
+                  icon={isLastPoint ? finishIcon : isFirstPoint ? startIcon : qrIcon}
+                >
+                  <Popup minWidth={170} maxWidth={190}>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5a645d]">
+                          {isLastPoint ? 'Финиш маршрута' : isFirstPoint ? 'Стартовая QR-точка' : 'QR-точка'}
+                        </p>
+                        <h3 className="mt-1 text-sm font-bold text-[#1a1c1a]">{routePoint.title}</h3>
+                        <p className="mt-1 text-xs text-[#404943]">{routePoint.subtitle}</p>
+                      </div>
+                      {!isLastPoint && routePoint.activationToken ? (
+                        <Link
+                          to={`/activate/${routePoint.activationToken}`}
+                          className="inline-flex w-full items-center justify-center rounded-full bg-[#0f5238] px-3 py-1.5 text-xs font-semibold text-white"
+                        >
+                          Открыть активацию
+                        </Link>
+                      ) : isLastPoint ? (
+                        <div className="rounded-2xl bg-[#f3f4f0] px-3 py-2 text-xs text-[#404943]">
+                          Эта точка завершает маршрут.
+                        </div>
+                      ) : null}
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            })}
+            <FitRouteBounds points={boundsPoints} fallbackCenter={mapCenter} />
           </MapContainer>
         )}
       </div>
@@ -213,15 +289,29 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
           <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1a1c1a] shadow-sm">
             <span className="inline-flex items-center gap-2">
               <span className="map-legend-dot map-legend-dot-current" />
-              {coordinates ? 'Вы' : routeStart.label}
+              {coordinates ? 'Вы' : 'Текущая позиция'}
             </span>
           </div>
-          <div className="rounded-full bg-[#0f5238] px-4 py-2 text-sm font-semibold text-white shadow-sm">
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1a1c1a] shadow-sm">
             <span className="inline-flex items-center gap-2">
-              <span className="map-legend-dot map-legend-dot-finish" />
-              Финиш: {destination.label}
+              <span className="map-legend-dot map-legend-dot-start" />
+              Старт
             </span>
           </div>
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1a1c1a] shadow-sm">
+            <span className="inline-flex items-center gap-2">
+              <span className="map-legend-dot map-legend-dot-qr" />
+              QR-точки
+            </span>
+          </div>
+          {finishPoint ? (
+            <div className="rounded-full bg-[#0f5238] px-4 py-2 text-sm font-semibold text-white shadow-sm">
+              <span className="inline-flex items-center gap-2">
+                <span className="map-legend-dot map-legend-dot-finish" />
+                Финиш: {finishPoint.title}
+              </span>
+            </div>
+          ) : null}
           <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1a1c1a] shadow-sm">
             <span className="inline-flex items-center gap-2">
               <span className="h-1.5 w-6 rounded-full bg-[#0f5238]" />
@@ -235,7 +325,7 @@ export function RouteMap({ destinationId = DEFAULT_NAVIGATION_DESTINATION }: Rou
         <div className="text-[#404943]">
           {coordinates
             ? `Текущие координаты: ${coordinates.latitude.toFixed(5)}, ${coordinates.longitude.toFixed(5)}`
-            : 'Разрешите геолокацию, чтобы карта строила путь от вашего устройства.'}
+            : 'Разрешите геолокацию, чтобы видеть своё местоположение рядом с маршрутом.'}
         </div>
         {routeError ? <div className="font-medium text-[#9b4232]">{routeError}</div> : null}
         {!routeError && error ? <div className="font-medium text-[#9b4232]">{error}</div> : null}

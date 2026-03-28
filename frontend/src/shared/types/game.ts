@@ -2,6 +2,8 @@ export type CheckpointStatus = 'locked' | 'available' | 'completed'
 export type RouteAccessType = 'free' | 'paid'
 export type RedemptionRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
 export type StreakKey = 'novice' | 'explorer' | 'traveler' | 'pathfinder' | 'legend'
+export type RoutePointKind = 'qr' | 'finish'
+export type RoutePointState = 'visited' | 'active' | 'locked'
 
 export interface Reward {
   title: string
@@ -19,16 +21,34 @@ export interface Checkpoint {
   reward: Reward
 }
 
+export interface RoutePoint {
+  id: string
+  title: string
+  subtitle: string
+  image: string
+  latitude: number
+  longitude: number
+  state: RoutePointState
+  kind: RoutePointKind
+  activationToken: string | null
+}
+
 export interface RouteDetails {
   id: string
   city: string
   title: string
   description: string
   accessType: RouteAccessType
+  priceRub: number
+  priceLabel: string
+  isPurchased: boolean
+  isActive: boolean
+  isCompleted: boolean
   currentLegLabel: string
   estimatedTime: string
   distance: string
   checkpoints: Checkpoint[]
+  routePoints: RoutePoint[]
   progress: number
 }
 
@@ -51,14 +71,6 @@ export interface Badge {
   id: string
   title: string
   tone: string
-}
-
-export interface Landmark {
-  id: string
-  title: string
-  subtitle: string
-  image: string
-  state: 'visited' | 'active' | 'locked'
 }
 
 export interface ProfileStat {
