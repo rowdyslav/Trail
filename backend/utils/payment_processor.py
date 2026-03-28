@@ -2,32 +2,17 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from yookassa import Configuration, Payment
+from yookassa.domain.response import PaymentResponse
+
 from env import ENV
-
-
-def _load_yookassa() -> tuple[Any, Any]:
-    try:
-        from yookassa import Configuration, Payment
-    except ModuleNotFoundError as error:
-        raise RuntimeError(
-            "YooKassa dependency is not installed. Add the 'yookassa' package first."
-        ) from error
-    return Configuration, Payment
 
 
 class YooKassaClient:
     def __init__(self) -> None:
-        account_id = ENV.yookassa_effective_account_id
-        secret_key = ENV.yookassa_secret_key
-        if not account_id or not secret_key:
-            raise ValueError(
-                "Missing YOOKASSA_ACCOUNT_ID/YOOKASSA_SHOP_ID or YOOKASSA_SECRET_KEY in environment"
-            )
-
-        configuration, payment = _load_yookassa()
-        configuration.account_id = account_id
-        configuration.secret_key = secret_key
-        self.payment_api = payment
+        Configuration.account_id =  ENV.yookassa_effective_account_id
+        Configuration.secret_key =  ENV.yookassa_secret_key
+        self.payment_api = Payment
 
     @staticmethod
     def _normalize_amount(amount: float | str | Decimal) -> str:
@@ -47,7 +32,7 @@ class YooKassaClient:
         return_url: str,
         description: str,
         order_id: str | None = None,
-    ) -> Any:
+    ) -> PaymentResponse:
         payment_data = {
             "amount": {
                 "value": self._normalize_amount(amount),

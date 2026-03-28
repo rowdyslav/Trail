@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from pymongo.errors import DuplicateKeyError
 
 from core.api.errors import (
@@ -21,7 +22,6 @@ from core.domain.routes import (
 )
 from core.domain.streaks import calculate_streak_days
 from core.models import Place, Route, RoutePlaceCompletion
-from fastapi import APIRouter
 
 router = APIRouter(tags=["Scan"])
 

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from core.api.errors import (
     active_route_not_selected_error,
@@ -43,8 +43,12 @@ def get_payment_processor() -> PaymentProcessor:
     "",
     responses=ber(unauthorized_error),
 )
-async def read_routes(me: CurrentUser) -> list[RouteRead]:
-    routes = await Route.find({}, fetch_links=True).to_list()
+async def read_routes(
+    me: CurrentUser,
+    route_type: RouteType | None = Query(default=None),
+) -> list[RouteRead]:
+    filters = {} if route_type is None else {"route_type": route_type}
+    routes = await Route.find(filters, fetch_links=True).to_list()
     return [await build_route_read_for_user(route, me) for route in routes]
 
 
