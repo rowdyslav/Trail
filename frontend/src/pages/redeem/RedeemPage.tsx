@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
-import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
+import { useCodeStore } from '../../features/code/model/useCodeStore'
 import { Button } from '../../shared/ui/Button'
 
 export function RedeemPage() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const prizeCatalog = useRedemptionStore((state) => state.prizeCatalog)
-  const isPrizeCatalogLoading = useRedemptionStore((state) => state.isPrizeCatalogLoading)
-  const createRedemptionRequest = useRedemptionStore((state) => state.createRedemptionRequest)
+  const prizeCatalog = useCodeStore((state) => state.prizeCatalog)
+  const isPrizeCatalogLoading = useCodeStore((state) => state.isPrizeCatalogLoading)
+  const createCodeRequest = useCodeStore((state) => state.createCodeRequest)
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>('')
   const [quantity, setQuantity] = useState('1')
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +19,7 @@ export function RedeemPage() {
 
   const handleCreateSingle = async () => {
     setIsSubmitting(true)
-    const result = await createRedemptionRequest({
+    const result = await createCodeRequest({
       items: [{ prizeId: resolvedSelectedPrizeId, quantity: 1 }],
     })
     setIsSubmitting(false)
@@ -35,7 +35,7 @@ export function RedeemPage() {
   const handleCreateMultiple = async () => {
     const parsedQuantity = Number(quantity)
     setIsSubmitting(true)
-    const result = await createRedemptionRequest({
+    const result = await createCodeRequest({
       items: [{ prizeId: resolvedSelectedPrizeId, quantity: parsedQuantity }],
     })
     setIsSubmitting(false)

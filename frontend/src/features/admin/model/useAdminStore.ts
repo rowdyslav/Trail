@@ -5,7 +5,7 @@ import type { AuthResult } from '../../auth/model/useAuthStore'
 const ADMIN_TOKEN_STORAGE_KEY = 'trail.admin.token'
 const ADMIN_EMAIL_STORAGE_KEY = 'trail.admin.email'
 
-export interface AdminSession {
+interface AdminSession {
   email: string
   token: string
 }

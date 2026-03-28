@@ -74,10 +74,12 @@ export function HomePage() {
                 alt="Ryazan Kremlin"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-8 left-8 right-8 text-white">
-                <p className="mb-1 text-sm font-medium opacity-80">Текущая цель</p>
-                <h3 className="text-2xl font-bold">{route.title}</h3>
-              </div>
+              {authToken ? (
+                <div className="absolute bottom-8 left-8 right-8 text-white">
+                  <p className="mb-1 text-sm font-medium opacity-80">Текущая цель</p>
+                  <h3 className="text-2xl font-bold">{route.title}</h3>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

@@ -1,5 +1,4 @@
-﻿import { create } from 'zustand'
-import { mockUser } from '../../../entities/quest/model/mockData'
+import { create } from 'zustand'
 import { authApi, type UserProfileRead } from '../api/authApi'
 import type { UserProfile } from '../../../shared/types/game'
 
@@ -45,6 +44,18 @@ const setStoredToken = (token: string | null) => {
   window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
 }
 
+const emptyUser: UserProfile = {
+  id: '',
+  email: undefined,
+  name: 'Гость',
+  title: 'Путешественник',
+  rewardPointsBalance: 0,
+  streakDays: 0,
+  streakKey: 'novice',
+  activeRouteId: null,
+  purchasedRouteIds: [],
+  badges: [],
+}
 const getDisplayNameFromEmail = (email: string) => email.split('@')[0] || email
 
 const mapApiUserToProfile = (apiUser: UserProfileRead, previousUser: UserProfile): UserProfile => ({
@@ -55,10 +66,12 @@ const mapApiUserToProfile = (apiUser: UserProfileRead, previousUser: UserProfile
   streakDays: apiUser.streak_days,
   streakKey: apiUser.streak_key,
   rewardPointsBalance: apiUser.reward_points,
+  activeRouteId: apiUser.active_route_id ?? null,
+  purchasedRouteIds: apiUser.purchased_route_ids ?? [],
 })
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: mockUser,
+  user: emptyUser,
   authToken: getStoredToken(),
   isAuthReady: false,
   isAuthLoading: false,
@@ -66,7 +79,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = get().authToken
 
     if (!token) {
-      set({ isAuthReady: true, isAuthLoading: false, user: mockUser })
+      set({ isAuthReady: true, isAuthLoading: false, user: emptyUser })
       return null
     }
 
@@ -84,7 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setStoredToken(null)
       set({
         authToken: null,
-        user: mockUser,
+        user: emptyUser,
         isAuthReady: true,
         isAuthLoading: false,
       })
@@ -145,7 +158,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       authToken: null,
       isAuthReady: true,
       isAuthLoading: false,
-      user: mockUser,
+      user: emptyUser,
     })
   },
   refreshMe: async () => {
@@ -169,7 +182,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setStoredToken(null)
       set({
         authToken: null,
-        user: mockUser,
+        user: emptyUser,
         isAuthLoading: false,
         isAuthReady: true,
       })

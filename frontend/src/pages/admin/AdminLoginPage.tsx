@@ -1,4 +1,4 @@
-﻿import {useState} from 'react'
+import {useState} from 'react'
 import {Navigate, useNavigate, useSearchParams} from 'react-router-dom'
 import {useAdminStore} from '../../features/admin/model/useAdminStore'
 
@@ -14,7 +14,7 @@ export function AdminLoginPage() {
   const isSessionExpired = searchParams.get('reason') === 'expired'
 
   if (adminSession) {
-    return <Navigate to="/admin/redemptions" replace/>
+    return <Navigate to="/admin/codes" replace/>
   }
 
   return (
@@ -39,7 +39,7 @@ export function AdminLoginPage() {
               return
             }
 
-            navigate('/admin/redemptions')
+            navigate('/admin/codes')
           }}
         >
           {isSessionExpired &&

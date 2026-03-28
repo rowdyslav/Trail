@@ -1,27 +1,27 @@
 import { useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
-import { getRedemptionDraftSummary } from '../../features/redemption/lib/getRedemptionDraftSummary'
-import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
-import { RedemptionConfirmationCard } from '../../features/redemption/ui/RedemptionConfirmationCard'
+import { getCodeDraftSummary } from '../../features/code/lib/getCodeDraftSummary'
+import { useCodeStore } from '../../features/code/model/useCodeStore'
+import { CodeConfirmationCard } from '../../features/code/ui/CodeConfirmationCard'
 
 export function RedeemConfirmPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const prizeCatalog = useRedemptionStore((state) => state.prizeCatalog)
+  const prizeCatalog = useCodeStore((state) => state.prizeCatalog)
   const user = useAuthStore((state) => state.user)
-  const draftItems = useRedemptionStore((state) => state.redemptionDraftItems)
-  const createRedemptionRequest = useRedemptionStore((state) => state.createRedemptionRequest)
-  const activeRequest = useRedemptionStore((state) => state.getActiveRedemptionForCurrentUser())
+  const draftItems = useCodeStore((state) => state.codeDraftItems)
+  const createCodeRequest = useCodeStore((state) => state.createCodeRequest)
+  const activeCode = useCodeStore((state) => state.getActiveCodeForCurrentUser())
 
   const summary = useMemo(
-    () => getRedemptionDraftSummary(prizeCatalog, draftItems, user.rewardPointsBalance),
+    () => getCodeDraftSummary(prizeCatalog, draftItems, user.rewardPointsBalance),
     [draftItems, prizeCatalog, user.rewardPointsBalance],
   )
 
-  if (activeRequest) {
-    return <Navigate to={`/redeem/${activeRequest.id}`} replace />
+  if (activeCode) {
+    return <Navigate to={`/redeem/${activeCode.id}`} replace />
   }
 
   if (summary.items.length === 0) {
@@ -32,7 +32,7 @@ export function RedeemConfirmPage() {
     setIsSubmitting(true)
     setError(null)
 
-    const result = await createRedemptionRequest({ items: draftItems })
+    const result = await createCodeRequest({ items: draftItems })
 
     setIsSubmitting(false)
 
@@ -46,7 +46,7 @@ export function RedeemConfirmPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-8 pb-32">
-      <RedemptionConfirmationCard
+      <CodeConfirmationCard
         items={summary.items}
         totalPoints={summary.totalPoints}
         balanceAfter={summary.balanceAfter}

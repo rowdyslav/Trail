@@ -3,7 +3,7 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { useAuthStore } from '../features/auth/model/useAuthStore'
 import { useRouteProgressStore } from '../features/game/model/useRouteProgressStore'
-import { useRedemptionStore } from '../features/redemption/model/useRedemptionStore'
+import { useCodeStore } from '../features/code/model/useCodeStore'
 
 export function App() {
   const authToken = useAuthStore((state) => state.authToken)
@@ -11,17 +11,23 @@ export function App() {
   const userId = useAuthStore((state) => state.user.id)
   const initializeAuth = useAuthStore((state) => state.initializeAuth)
   const resetRouteState = useRouteProgressStore((state) => state.resetRouteState)
-  const hydrateActiveRedemptions = useRedemptionStore((state) => state.hydrateActiveRedemptions)
-  const fetchPrizeCatalog = useRedemptionStore((state) => state.fetchPrizeCatalog)
+  const syncRouteStateFromProfile = useRouteProgressStore((state) => state.syncRouteStateFromProfile)
+  const hydrateActiveCodes = useCodeStore((state) => state.hydrateActiveCodes)
+  const fetchPrizeCatalog = useCodeStore((state) => state.fetchPrizeCatalog)
   const sessionKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     void (async () => {
       const profile = await initializeAuth()
-      hydrateActiveRedemptions(profile)
+      hydrateActiveCodes(profile)
+
+      if (profile) {
+        await syncRouteStateFromProfile()
+      }
+
       await fetchPrizeCatalog()
     })()
-  }, [fetchPrizeCatalog, hydrateActiveRedemptions, initializeAuth])
+  }, [fetchPrizeCatalog, hydrateActiveCodes, initializeAuth, syncRouteStateFromProfile])
 
   useEffect(() => {
     if (!isAuthReady) {

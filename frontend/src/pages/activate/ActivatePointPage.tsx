@@ -58,6 +58,7 @@ export function ActivatePointPage() {
       ? 'Войдите в аккаунт, чтобы активировать точку маршрута.'
       : activation.error
 
+  console.log(data?.ai.fact)
   return (
     <main className="mx-auto flex min-h-[calc(100vh-170px)] max-w-3xl items-center px-4 pb-28 pt-8 sm:px-6">
       <section className="relative w-full overflow-hidden rounded-[2rem] border border-[#dfe5dc] bg-white shadow-[0_24px_70px_rgba(15,82,56,0.12)]">
@@ -89,7 +90,6 @@ export function ActivatePointPage() {
                       Точка активирована
                     </div>
                     <h2 className="mt-4 text-3xl font-black tracking-tight">{data.point.title}</h2>
-                    <p className="mt-3 max-w-xl text-sm leading-6 text-white/85">{data.message}</p>
                   </div>
                 </div>
               </div>
@@ -118,10 +118,10 @@ export function ActivatePointPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] bg-[#f8faf7] p-5 text-left">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#5a645d]">Маршрут</p>
-                <h3 className="mt-2 text-lg font-extrabold text-[#1a1c1a]">{data.route.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-[#404943]">{data.ai.fact}</p>
+
+              <div className="rounded-[1.75rem] border border-[#cfe4d7] bg-[linear-gradient(180deg,#f7fcf8_0%,#eef8f1_100%)] p-5 text-left shadow-[0_12px_30px_rgba(15,82,56,0.06)]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#0f5238]">Историческая справка</p>
+                <p className="mt-3 text-sm leading-7 text-[#1f2a24]">{data.ai.fact}</p>
               </div>
 
               <div className="flex flex-wrap justify-center gap-3">
@@ -149,12 +149,15 @@ export function ActivatePointPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-extrabold text-[#1a1c1a]">Точка уже была активирована</h2>
+                  <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.message}</p>
                   <p className="mt-3 text-sm leading-6 text-[#5f562f]">
-                    {data.message}
+                    {data.point.title} ({data.point.id}). Маршрут: {data.route.title}. Текущий баланс:{' '}
+                    {data.reward_points.total_balance}.
                   </p>
-                  <p className="mt-3 text-sm leading-6 text-[#5f562f]">
-                    Маршрут: {data.route.title}. Текущий баланс: {data.reward_points.total_balance}.
-                  </p>
+                  <div className="mt-4 rounded-[1.5rem] border border-[#ead99d] bg-[#fffdf5] p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#8a6110]">Историческая справка</p>
+                    <p className="mt-3 text-sm leading-6 text-[#5f562f]">{data.ai.fact}</p>
+                  </div>
                   <div className="mt-4 flex flex-wrap justify-center gap-3 sm:justify-start">
                     <Link
                       to="/route"

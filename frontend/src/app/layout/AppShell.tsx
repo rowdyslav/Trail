@@ -1,4 +1,4 @@
-﻿import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { MdExplore, MdMap, MdMilitaryTech, MdOutlinePerson } from 'react-icons/md'
 import { useAuthStore } from '../../features/auth/model/useAuthStore'
 import { cn } from '../../shared/lib/cn'
@@ -49,25 +49,33 @@ export function AppShell() {
 
       <Outlet />
 
-      <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-[3rem] bg-[#ffffffcc] px-4 pb-6 pt-3 shadow-[0_-8px_32px_rgba(15,82,56,0.06)] backdrop-blur-xl">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.match
-          const Icon = item.icon
+      <nav className="fixed inset-x-0 bottom-0 z-50 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 md:px-0 md:pt-0 md:pb-0">
+        <div className="mx-auto flex w-full max-w-md items-center gap-1 rounded-[2rem] border border-white/70 bg-[#ffffffd9] px-2 py-2 shadow-[0_-8px_32px_rgba(15,82,56,0.06)] backdrop-blur-xl md:max-w-none md:justify-around md:rounded-t-[3rem] md:rounded-b-none md:border-x-0 md:border-b-0 md:px-6 md:pb-6 md:pt-3">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.match
+            const Icon = item.icon
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={cn(
-                'flex flex-col items-center justify-center px-5 py-2 text-[#404943] transition-opacity hover:opacity-80',
-                isActive && 'translate-y-[-2px] rounded-full bg-[#cbebc8] text-[#0f5238]',
-              )}
-            >
-              <Icon className="text-[24px]" />
-              <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider">{item.label}</span>
-            </NavLink>
-          )
-        })}
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className="flex min-w-0 flex-1 items-center justify-center text-[#404943] transition-opacity hover:opacity-80"
+              >
+                <span
+                  className={cn(
+                    'flex min-w-0 flex-col items-center justify-center rounded-[1.2rem] px-3 py-2 sm:px-4',
+                    isActive && 'translate-y-[-2px] bg-[#cbebc8] text-[#0f5238]',
+                  )}
+                >
+                  <Icon className="text-[22px] sm:text-[24px]" />
+                  <span className="mt-1 max-w-full truncate text-center text-[10px] font-semibold tracking-[0.12em] sm:text-[11px]">
+                    {item.label}
+                  </span>
+                </span>
+              </NavLink>
+            )
+          })}
+        </div>
       </nav>
     </div>
   )

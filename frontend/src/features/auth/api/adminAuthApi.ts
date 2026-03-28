@@ -1,4 +1,4 @@
-﻿import { apiRequest } from '../../../shared/api/http'
+import { apiRequest } from '../../../shared/api/http'
 
 interface BearerToken {
   access_token: string

@@ -1,17 +1,17 @@
-import type { PrizeCatalogItem, RedemptionDraftItem, RedemptionRequestItem } from '../../../shared/types/game'
+import type { PrizeCatalogItem, CodeDraftItem, CodeRequestItem } from '../../../shared/types/game'
 
-export interface RedemptionDraftSummary {
-  items: RedemptionRequestItem[]
+export interface CodeDraftSummary {
+  items: CodeRequestItem[]
   totalPoints: number
   totalQuantity: number
   balanceAfter: number
 }
 
-export function getRedemptionDraftSummary(
+export function getCodeDraftSummary(
   prizeCatalog: PrizeCatalogItem[],
-  draftItems: RedemptionDraftItem[],
+  draftItems: CodeDraftItem[],
   rewardPointsBalance: number,
-): RedemptionDraftSummary {
+): CodeDraftSummary {
   const items = draftItems
     .map((draftItem) => {
       const prize = prizeCatalog.find((item) => item.id === draftItem.prizeId && item.isActive !== false)
@@ -26,9 +26,9 @@ export function getRedemptionDraftSummary(
         pointsCostSnapshot: prize.pointsCost,
         quantity: draftItem.quantity,
         totalPoints: prize.pointsCost * draftItem.quantity,
-      } satisfies RedemptionRequestItem
+      } satisfies CodeRequestItem
     })
-    .filter((item): item is RedemptionRequestItem => item !== null)
+    .filter((item): item is CodeRequestItem => item !== null)
 
   const totalPoints = items.reduce((sum, item) => sum + item.totalPoints, 0)
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0)

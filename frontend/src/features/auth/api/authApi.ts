@@ -15,25 +15,26 @@ interface UserRead {
   purchased_route_ids?: string[]
 }
 
-interface RedemptionPrizeItemRead {
+interface CodePrizeItemRead {
   prize_id: string
   title: string
   points_cost: number
   quantity: number
 }
 
-interface RedemptionCodeRead {
+interface CodeRead {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   requested_points: number
   created_at: string
   used_at?: string | null
   cancelled_at?: string | null
-  items: RedemptionPrizeItemRead[]
+  items: CodePrizeItemRead[]
 }
 
 interface UserProfileRead extends UserRead {
-  active_redemptions?: RedemptionCodeRead[]
+  active_codes?: CodeRead[]
+  active_redemptions?: CodeRead[]
   payments?: PaymentRead[]
 }
 
@@ -77,4 +78,4 @@ export const authApi = {
     }),
 }
 
-export type { PaymentRead, RedemptionCodeRead, UserProfileRead, UserRead }
+export type { PaymentRead, UserProfileRead }

@@ -1,8 +1,7 @@
 import { create } from 'zustand'
-import { catalogRoutes, mockRoute } from '../../../entities/quest/model/mockData'
 import type { CatalogRoute, RouteAccessType, RouteDetails } from '../../../shared/types/game'
 import { useAuthStore } from '../../auth/model/useAuthStore'
-import { routesApi, type RouteRead } from '../../navigation/api/routesApi'
+import { routesApi, type RouteRead, type RouteViewerProfileState } from '../../navigation/api/routesApi'
 
 interface RouteProgressState {
   route: RouteDetails
@@ -18,6 +17,7 @@ interface RouteProgressState {
   clearRouteActionError: () => void
   clearPreviewRoute: () => Promise<{ success: boolean; error?: string }>
   resetRouteState: () => void
+  syncRouteStateFromProfile: () => Promise<void>
   loadCatalogRoutes: (routeType?: RouteAccessType | null) => Promise<void>
   selectRoute: (routeId: string) => Promise<{ success: boolean; error?: string }>
   previewRoute: (routeId: string) => Promise<{ success: boolean; error?: string }>
@@ -25,26 +25,45 @@ interface RouteProgressState {
   confirmRoutePurchase: (routeId: string) => Promise<{ success: boolean; error?: string }>
 }
 
-const getRouteProgress = (completedCount: number, totalCount: number) => {
-  if (totalCount === 0) {
-    return 0
-  }
-
-  return Math.round((completedCount / totalCount) * 100)
-}
-
 const fallbackRoute: RouteDetails = {
-  ...mockRoute,
-  progress: getRouteProgress(
-    mockRoute.checkpoints.filter((checkpoint) => checkpoint.status === 'completed').length,
-    mockRoute.checkpoints.length,
-  ),
+  id: '',
+  city: '',
+  title: 'Выберите маршрут в каталоге',
+  description: 'Маршрут появится здесь после загрузки данных с сервера.',
+  accessType: 'free',
+  priceRub: 0,
+  priceLabel: 'Free',
+  isPurchased: false,
+  isActive: false,
+  isCompleted: false,
+  currentLegLabel: 'Маршрут не выбран',
+  estimatedTime: '—',
+  distance: '—',
+  checkpoints: [],
+  routePoints: [],
+  progress: 0,
 }
 
 const getRouteById = (routes: RouteRead[], routeId?: string | null) =>
   routeId ? routes.find((routeItem) => routeItem.id === routeId) ?? null : null
 
-const getCurrentActiveRoute = (routes: RouteRead[]) => routes.find((routeItem) => Boolean(routeItem.is_active)) ?? null
+const getViewerProfileState = (): RouteViewerProfileState | undefined => {
+  const { authToken, user } = useAuthStore.getState()
+
+  if (!authToken) {
+    return undefined
+  }
+
+  return {
+    activeRouteId: user.activeRouteId,
+    purchasedRouteIds: user.purchasedRouteIds,
+  }
+}
+
+const getCurrentActiveRoute = (routes: RouteRead[], viewerState?: RouteViewerProfileState) => {
+  const activeRouteId = routesApi.normalizeMany(routes, viewerState).find((routeItem) => routeItem.is_active)?.id ?? null
+  return getRouteById(routes, activeRouteId)
+}
 
 const readRoutes = async (routeType?: RouteAccessType | null) => {
   const token = useAuthStore.getState().authToken
@@ -61,12 +80,13 @@ const getResolvedRoute = (
   previewRouteId?: string | null,
   selectedRouteId?: string | null,
   explicitRoute?: RouteRead | null,
+  viewerState?: RouteViewerProfileState,
 ) => {
   if (explicitRoute) {
     return explicitRoute
   }
 
-  return getRouteById(routes, previewRouteId) ?? getRouteById(routes, selectedRouteId) ?? getCurrentActiveRoute(routes) ?? null
+  return getRouteById(routes, previewRouteId) ?? getRouteById(routes, selectedRouteId) ?? getCurrentActiveRoute(routes, viewerState) ?? null
 }
 
 const getSyncedCatalogAndRouteState = async (
@@ -75,17 +95,20 @@ const getSyncedCatalogAndRouteState = async (
   explicitRouteId?: string | null,
 ) => {
   const activeRouteTypeFilter = useRouteProgressStore.getState().activeRouteTypeFilter
+  const viewerState = getViewerProfileState()
   const routesPromise = readRoutes(activeRouteTypeFilter)
   const routePromise = explicitRouteId ? readRoute(explicitRouteId).catch(() => null) : Promise.resolve(null)
 
   const [routes, explicitRoute] = await Promise.all([routesPromise, routePromise])
-  const activeRoute = explicitRoute?.is_active ? explicitRoute : getCurrentActiveRoute(routes)
-  const nextSelectedRouteId = activeRoute?.id ?? selectedRouteId ?? null
-  const resolvedRoute = getResolvedRoute(routes, previewRouteId, nextSelectedRouteId, explicitRoute)
+  const normalizedExplicitRoute = explicitRoute ? routesApi.normalize(explicitRoute, viewerState) : null
+  const activeRoute = normalizedExplicitRoute?.is_active ? explicitRoute : getCurrentActiveRoute(routes, viewerState)
+  const profileSelectedRouteId = viewerState?.activeRouteId ?? null
+  const nextSelectedRouteId = profileSelectedRouteId ?? activeRoute?.id ?? selectedRouteId ?? null
+  const resolvedRoute = getResolvedRoute(routes, previewRouteId, nextSelectedRouteId, explicitRoute, viewerState)
 
   return {
-    catalogRoutes: routesApi.toCatalogRoutes(routes),
-    route: routesApi.toRouteDetails(resolvedRoute) ?? fallbackRoute,
+    catalogRoutes: routesApi.toCatalogRoutes(routes, viewerState),
+    route: routesApi.toRouteDetails(resolvedRoute, viewerState) ?? fallbackRoute,
     selectedRouteId: nextSelectedRouteId,
     hasRouteSelection: Boolean(nextSelectedRouteId),
   }
@@ -96,7 +119,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
   hasRouteSelection: false,
   selectedRouteId: null,
   previewRouteId: null,
-  catalogRoutes,
+  catalogRoutes: [],
   isCatalogLoading: false,
   isRouteActionLoading: false,
   catalogError: null,
@@ -156,6 +179,33 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
       activeRouteTypeFilter: null,
     })
   },
+  syncRouteStateFromProfile: async () => {
+    const state = useRouteProgressStore.getState()
+
+    if (!useAuthStore.getState().authToken) {
+      return
+    }
+
+    useRouteProgressStore.setState({
+      isCatalogLoading: true,
+      catalogError: null,
+    })
+
+    try {
+      const nextState = await getSyncedCatalogAndRouteState(state.previewRouteId, state.selectedRouteId)
+
+      useRouteProgressStore.setState({
+        ...nextState,
+        previewRouteId: state.previewRouteId,
+        isCatalogLoading: false,
+      })
+    } catch (error) {
+      useRouteProgressStore.setState({
+        isCatalogLoading: false,
+        catalogError: error instanceof Error ? error.message : 'Не удалось синхронизировать маршруты.',
+      })
+    }
+  },
   loadCatalogRoutes: async (routeType = null) => {
     useRouteProgressStore.setState({
       isCatalogLoading: true,
@@ -198,6 +248,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
 
     try {
       await routesApi.select(routeId, token)
+      await useAuthStore.getState().refreshMe()
 
       useRouteProgressStore.setState({
         ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
@@ -229,9 +280,10 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     try {
       const route = await readRoute(routeId)
       const selectedRouteId = useRouteProgressStore.getState().selectedRouteId
+      const viewerState = getViewerProfileState()
 
       useRouteProgressStore.setState({
-        route: routesApi.toRouteDetails(route) ?? fallbackRoute,
+        route: routesApi.toRouteDetails(route, viewerState) ?? fallbackRoute,
         previewRouteId: routeId,
         selectedRouteId,
         hasRouteSelection: Boolean(selectedRouteId),
@@ -282,6 +334,8 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
         throw new Error('Backend did not return a payment page URL for this route payment.')
       }
 
+      await useAuthStore.getState().refreshMe()
+
       useRouteProgressStore.setState({
         ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),
         previewRouteId: null,
@@ -323,6 +377,7 @@ export const useRouteProgressStore = create<RouteProgressState>(() => ({
     try {
       await routesApi.confirmPayment(routeId, token)
       await routesApi.select(routeId, token)
+      await useAuthStore.getState().refreshMe()
 
       useRouteProgressStore.setState({
         ...(await getSyncedCatalogAndRouteState(null, routeId, routeId)),

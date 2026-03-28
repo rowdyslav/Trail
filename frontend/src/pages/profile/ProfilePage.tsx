@@ -1,4 +1,4 @@
-﻿import {useState} from 'react'
+import {useState} from 'react'
 import {
   MdAutoAwesome,
   MdCheckroom,
@@ -15,23 +15,23 @@ import {
 import {Link} from 'react-router-dom'
 import {profileStats, upgradeItems} from '../../entities/quest/model/mockData'
 import {useAuthStore} from '../../features/auth/model/useAuthStore'
-import {useRedemptionStore} from '../../features/redemption/model/useRedemptionStore'
-import {ActiveRedemptionCard} from '../../features/redemption/ui/ActiveRedemptionCard'
+import {useCodeStore} from '../../features/code/model/useCodeStore'
+import {ActiveCodeCard} from '../../features/code/ui/ActiveCodeCard'
 import {avatarByStreakKey} from '../../shared/lib/avatarByStreakKey'
 
 export function ProfilePage() {
   const user = useAuthStore((state) => state.user)
-  const activeRedemption = useRedemptionStore((state) => state.getActiveRedemptionForCurrentUser())
+  const activeCode = useCodeStore((state) => state.getActiveCodeForCurrentUser())
   const logoutUser = useAuthStore((state) => state.logoutUser)
-  const clearRedemptionData = useRedemptionStore((state) => state.clearRedemptionData)
-  const cancelCurrentRedemption = useRedemptionStore((state) => state.cancelCurrentRedemption)
-  const [isCancellingRedemption, setIsCancellingRedemption] = useState(false)
+  const clearCodeData = useCodeStore((state) => state.clearCodeData)
+  const cancelCurrentCode = useCodeStore((state) => state.cancelCurrentCode)
+  const [isCancellingCode, setIsCancellingCode] = useState(false)
   const avatarSrc = avatarByStreakKey[user.streakKey] ?? avatarByStreakKey.novice
 
-  const handleCancelRedemption = async () => {
-    setIsCancellingRedemption(true)
-    await cancelCurrentRedemption()
-    setIsCancellingRedemption(false)
+  const handleCancelCode = async () => {
+    setIsCancellingCode(true)
+    await cancelCurrentCode()
+    setIsCancellingCode(false)
   }
 
   return (
@@ -57,12 +57,12 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {activeRedemption ? (
-        <ActiveRedemptionCard
-          request={activeRedemption}
-          isCancelling={isCancellingRedemption}
+      {activeCode ? (
+        <ActiveCodeCard
+          request={activeCode}
+          isCancelling={isCancellingCode}
           onCancel={() => {
-            void handleCancelRedemption()
+            void handleCancelCode()
           }}
         />
       ) : null}
@@ -71,13 +71,13 @@ export function ProfilePage() {
         <div className="rounded-lg bg-[#0f5238] p-6 text-white shadow-[0_16px_30px_rgba(15,82,56,0.18)]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">Баллы наград</p>
+              <p className="text-2xl font-bold uppercase text-white/70">Баллы наград</p>
               <p className="mt-3 text-4xl font-extrabold">{user.rewardPointsBalance}</p>
             </div>
             <MdStars className="text-4xl text-[#b1f0ce]"/>
           </div>
-          <p className="mt-4 text-sm leading-6 text-white/80">
-            Баллы можно обменивать на призы, сувениры и скидки на платные маршруты.
+          <p className="mt-4 text-xl leading-6 text-white/80">
+            Баллы можно обменивать на призы, сувениры.
           </p>
           <Link
             to="/redeem"
@@ -154,7 +154,7 @@ export function ProfilePage() {
           type="button"
           onClick={() => {
             logoutUser()
-            clearRedemptionData()
+            clearCodeData()
           }}
           className="w-full rounded-full border border-[#d6ddd6] bg-white py-4 text-sm font-bold text-[#1a1c1a] transition hover:bg-[#f3f4f0]"
         >

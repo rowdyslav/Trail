@@ -1,54 +1,53 @@
-﻿import { create } from 'zustand'
-import { initialRedemptionRequests } from '../../../entities/quest/model/mockData'
+import { create } from 'zustand'
 import { type UserProfileRead } from '../../auth/api/authApi'
 import { useAuthStore } from '../../auth/model/useAuthStore'
 import { prizesApi } from '../api/prizesApi'
-import { mapRedemptionCodeRead, redemptionsApi } from '../api/redemptionsApi'
-import type { PrizeCatalogItem, RedemptionDraftItem, RedemptionRequest, RedemptionRequestItem } from '../../../shared/types/game'
+import { mapCodeRead, codesApi } from '../api/codesApi'
+import type { PrizeCatalogItem, CodeDraftItem, CodeRequest, CodeRequestItem } from '../../../shared/types/game'
 
-interface CreateRedemptionPayload {
+interface CreateCodePayload {
   items: Array<{
     prizeId: string
     quantity: number
   }>
 }
 
-interface RedemptionResult {
+interface CodeResult {
   success: boolean
-  request?: RedemptionRequest
+  request?: CodeRequest
   error?: string
 }
 
-interface CancelRedemptionResult {
+interface CancelCodeResult {
   success: boolean
-  request?: RedemptionRequest
+  request?: CodeRequest
   error?: string
 }
 
-interface RedemptionStoreState {
+interface CodeStoreState {
   prizeCatalog: PrizeCatalogItem[]
-  redemptions: RedemptionRequest[]
-  redemptionDraftItems: RedemptionDraftItem[]
+  codes: CodeRequest[]
+  codeDraftItems: CodeDraftItem[]
   isPrizeCatalogLoading: boolean
-  setRedemptionDraftItem: (payload: RedemptionDraftItem) => void
-  clearRedemptionDraft: () => void
+  setCodeDraftItem: (payload: CodeDraftItem) => void
+  clearCodeDraft: () => void
   fetchPrizeCatalog: () => Promise<void>
-  hydrateActiveRedemptions: (profile: UserProfileRead | null) => void
-  clearRedemptionData: () => void
-  createRedemptionRequest: (payload: CreateRedemptionPayload) => Promise<RedemptionResult>
-  cancelCurrentRedemption: () => Promise<CancelRedemptionResult>
-  getActiveRedemptionForCurrentUser: () => RedemptionRequest | null
-  getRedemptionById: (id: string) => RedemptionRequest | null
-  findRedemptionByCode: (code: string) => RedemptionRequest | null
+  hydrateActiveCodes: (profile: UserProfileRead | null) => void
+  clearCodeData: () => void
+  createCodeRequest: (payload: CreateCodePayload) => Promise<CodeResult>
+  cancelCurrentCode: () => Promise<CancelCodeResult>
+  getActiveCodeForCurrentUser: () => CodeRequest | null
+  getCodeById: (id: string) => CodeRequest | null
+  findCodeByValue: (code: string) => CodeRequest | null
 }
 
 const normalizeCode = (code: string) => code.trim().toUpperCase()
 const getDisplayNameFromEmail = (email: string) => email.split('@')[0] || email
 
-const buildRedemptionItems = (
+const buildCodeItems = (
   catalog: PrizeCatalogItem[],
-  payloadItems: CreateRedemptionPayload['items'],
-): RedemptionRequestItem[] => {
+  payloadItems: CreateCodePayload['items'],
+): CodeRequestItem[] => {
   return payloadItems
     .map(({ prizeId, quantity }) => {
       const catalogItem = catalog.find((item) => item.id === prizeId && item.isActive !== false)
@@ -66,28 +65,28 @@ const buildRedemptionItems = (
         totalPoints: catalogItem.pointsCost * safeQuantity,
       }
     })
-    .filter((item): item is RedemptionRequestItem => item !== null)
+    .filter((item): item is CodeRequestItem => item !== null)
 }
 
-export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
+export const useCodeStore = create<CodeStoreState>((set, get) => ({
   prizeCatalog: [],
-  redemptions: initialRedemptionRequests,
-  redemptionDraftItems: [],
+  codes: [],
+  codeDraftItems: [],
   isPrizeCatalogLoading: false,
-  setRedemptionDraftItem: ({ prizeId, quantity }) =>
+  setCodeDraftItem: ({ prizeId, quantity }) =>
     set((state) => {
       const safeQuantity = Math.max(0, Math.round(quantity))
-      const nextItems = state.redemptionDraftItems.filter((item) => item.prizeId !== prizeId)
+      const nextItems = state.codeDraftItems.filter((item) => item.prizeId !== prizeId)
 
       if (safeQuantity <= 0) {
-        return { redemptionDraftItems: nextItems }
+        return { codeDraftItems: nextItems }
       }
 
       return {
-        redemptionDraftItems: [...nextItems, { prizeId, quantity: safeQuantity }],
+        codeDraftItems: [...nextItems, { prizeId, quantity: safeQuantity }],
       }
     }),
-  clearRedemptionDraft: () => set({ redemptionDraftItems: [] }),
+  clearCodeDraft: () => set({ codeDraftItems: [] }),
   fetchPrizeCatalog: async () => {
     const token = useAuthStore.getState().authToken
 
@@ -111,15 +110,15 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
       })
     }
   },
-  hydrateActiveRedemptions: (profile) => {
+  hydrateActiveCodes: (profile) => {
     if (!profile) {
-      set({ redemptions: [], redemptionDraftItems: [] })
+      set({ codes: [], codeDraftItems: [] })
       return
     }
 
     set({
-      redemptions: (profile.active_redemptions ?? []).map((redemption) => {
-        const mapped = mapRedemptionCodeRead(redemption)
+      codes: (profile.active_codes ?? profile.active_redemptions ?? []).map((codeItem) => {
+        const mapped = mapCodeRead(codeItem)
         return {
           ...mapped,
           userId: profile.id,
@@ -128,29 +127,29 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
       }),
     })
   },
-  clearRedemptionData: () =>
+  clearCodeData: () =>
     set({
       prizeCatalog: [],
-      redemptions: [],
-      redemptionDraftItems: [],
+      codes: [],
+      codeDraftItems: [],
       isPrizeCatalogLoading: false,
     }),
-  createRedemptionRequest: async ({ items }) => {
+  createCodeRequest: async ({ items }) => {
     const authState = useAuthStore.getState()
     const state = get()
     const token = authState.authToken
-    const activeRequest = state.redemptions.find(
-      (redemption) => redemption.userId === authState.user.id && redemption.status === 'active',
+    const activeCode = state.codes.find(
+      (candidate) => candidate.userId === authState.user.id && candidate.status === 'active',
     )
 
-    if (activeRequest) {
+    if (activeCode) {
       return {
         success: false,
         error: 'У вас уже есть активный код выдачи. Сначала используйте его у администратора.',
       }
     }
 
-    const normalizedItems = buildRedemptionItems(state.prizeCatalog, items)
+    const normalizedItems = buildCodeItems(state.prizeCatalog, items)
 
     if (normalizedItems.length === 0) {
       return { success: false, error: 'Выберите хотя бы один приз.' }
@@ -167,7 +166,7 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
     }
 
     try {
-      const request = await redemptionsApi.create(
+      const request = await codesApi.create(
         token,
         items.map((item) => ({
           prize_id: item.prizeId,
@@ -187,38 +186,38 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
       }))
 
       set((currentState) => ({
-        redemptions: [
+        codes: [
           normalizedRequest,
-          ...currentState.redemptions.filter((existing) => normalizeCode(existing.code) !== normalizeCode(normalizedRequest.code)),
+          ...currentState.codes.filter((existing) => normalizeCode(existing.code) !== normalizeCode(normalizedRequest.code)),
         ],
-        redemptionDraftItems: [],
+        codeDraftItems: [],
       }))
 
       return { success: true, request: normalizedRequest }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Could not create redemption code.',
+        error: error instanceof Error ? error.message : 'Could not create code.',
       }
     }
   },
-  cancelCurrentRedemption: async () => {
+  cancelCurrentCode: async () => {
     const authState = useAuthStore.getState()
     const token = authState.authToken
-    const activeRequest = get().redemptions.find(
-      (redemption) => redemption.userId === authState.user.id && redemption.status === 'active',
+    const activeCode = get().codes.find(
+      (candidate) => candidate.userId === authState.user.id && candidate.status === 'active',
     )
 
     if (!token) {
       return { success: false, error: 'Требуется авторизация.' }
     }
 
-    if (!activeRequest) {
+    if (!activeCode) {
       return { success: false, error: 'Активный код выдачи не найден.' }
     }
 
     try {
-      const cancelledRequest = await redemptionsApi.cancel(token, activeRequest.code)
+      const cancelledRequest = await codesApi.cancel(token, activeCode.code)
       const normalizedRequest = {
         ...cancelledRequest,
         userId: authState.user.id,
@@ -231,8 +230,8 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
       }))
 
       set((state) => ({
-        redemptions: state.redemptions.map((redemption) =>
-          normalizeCode(redemption.code) === normalizeCode(normalizedRequest.code) ? normalizedRequest : redemption,
+        codes: state.codes.map((candidate) =>
+          normalizeCode(candidate.code) === normalizeCode(normalizedRequest.code) ? normalizedRequest : candidate,
         ),
       }))
 
@@ -240,15 +239,15 @@ export const useRedemptionStore = create<RedemptionStoreState>((set, get) => ({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Could not cancel redemption code.',
+        error: error instanceof Error ? error.message : 'Could not cancel code.',
       }
     }
   },
-  getActiveRedemptionForCurrentUser: () => {
+  getActiveCodeForCurrentUser: () => {
     const userId = useAuthStore.getState().user.id
-    return get().redemptions.find((redemption) => redemption.userId === userId && redemption.status === 'active') ?? null
+    return get().codes.find((candidate) => candidate.userId === userId && candidate.status === 'active') ?? null
   },
-  getRedemptionById: (id) => get().redemptions.find((redemption) => redemption.id === id) ?? null,
-  findRedemptionByCode: (code) =>
-    get().redemptions.find((redemption) => normalizeCode(redemption.code) === normalizeCode(code)) ?? null,
+  getCodeById: (id) => get().codes.find((candidate) => candidate.id === id) ?? null,
+  findCodeByValue: (code) =>
+    get().codes.find((candidate) => normalizeCode(candidate.code) === normalizeCode(code)) ?? null,
 }))

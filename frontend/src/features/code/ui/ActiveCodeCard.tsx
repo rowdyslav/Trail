@@ -1,9 +1,9 @@
-﻿import {Link} from 'react-router-dom'
+import {Link} from 'react-router-dom'
 import {Button} from '../../../shared/ui/Button'
-import type {RedemptionRequest} from '../../../shared/types/game'
+import type {CodeRequest} from '../../../shared/types/game'
 
-interface ActiveRedemptionCardProps {
-  request: RedemptionRequest
+interface ActiveCodeCardProps {
+  request: CodeRequest
   isCancelling?: boolean
   onCancel?: () => void
 }
@@ -15,7 +15,7 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 })
 
-export function ActiveRedemptionCard({request, isCancelling = false, onCancel}: ActiveRedemptionCardProps) {
+export function ActiveCodeCard({request, isCancelling = false, onCancel}: ActiveCodeCardProps) {
   return (
     <section className="rounded-[2rem] bg-[#0f5238] p-6 text-white shadow-[0_20px_50px_rgba(15,82,56,0.18)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

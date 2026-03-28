@@ -1,6 +1,6 @@
 export type CheckpointStatus = 'locked' | 'available' | 'completed'
 export type RouteAccessType = 'free' | 'paid'
-export type RedemptionRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
+export type CodeRequestStatus = 'active' | 'used' | 'expired' | 'cancelled'
 export type StreakKey = 'novice' | 'explorer' | 'traveler' | 'pathfinder' | 'legend'
 export type RoutePointKind = 'qr' | 'finish'
 export type RoutePointState = 'visited' | 'active' | 'locked'
@@ -94,12 +94,12 @@ export interface PrizeCatalogItem {
   image?: string
 }
 
-export interface RedemptionDraftItem {
+export interface CodeDraftItem {
   prizeId: string
   quantity: number
 }
 
-export interface RedemptionRequestItem {
+export interface CodeRequestItem {
   prizeId: string
   titleSnapshot: string
   pointsCostSnapshot: number
@@ -107,16 +107,16 @@ export interface RedemptionRequestItem {
   totalPoints: number
 }
 
-export interface RedemptionRequest {
+export interface CodeRequest {
   id: string
   code: string
-  status: RedemptionRequestStatus
+  status: CodeRequestStatus
   userId: string
   userName: string
   createdAt: string
   issuedAt?: string
   totalPoints: number
-  items: RedemptionRequestItem[]
+  items: CodeRequestItem[]
 }
 
 export interface UserProfile {
@@ -127,5 +127,7 @@ export interface UserProfile {
   rewardPointsBalance: number
   streakDays: number
   streakKey: StreakKey
+  activeRouteId: string | null
+  purchasedRouteIds: string[]
   badges: Badge[]
 }

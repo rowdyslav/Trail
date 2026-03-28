@@ -1,31 +1,31 @@
-﻿import { apiRequest } from '../../../shared/api/http'
-import type { RedemptionRequest } from '../../../shared/types/game'
+import { apiRequest } from '../../../shared/api/http'
+import type { CodeRequest } from '../../../shared/types/game'
 
-interface RedemptionPrizeItemRead {
+interface CodePrizeItemRead {
   prize_id: string
   title: string
   points_cost: number
   quantity: number
 }
 
-interface RedemptionCodeRead {
+interface CodeRead {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   requested_points: number
   created_at: string
   used_at?: string | null
   cancelled_at?: string | null
-  items: RedemptionPrizeItemRead[]
+  items: CodePrizeItemRead[]
 }
 
-interface RedemptionPrizeSelection {
+interface CodePrizeSelection {
   prize_id: string
   quantity: number
 }
 
-const mapStatus = (status: RedemptionCodeRead['status']): RedemptionRequest['status'] => status
+const mapStatus = (status: CodeRead['status']): CodeRequest['status'] => status
 
-export const mapRedemptionCodeRead = (payload: RedemptionCodeRead): RedemptionRequest => ({
+export const mapCodeRead = (payload: CodeRead): CodeRequest => ({
   id: payload.code,
   code: payload.code,
   status: mapStatus(payload.status),
@@ -43,9 +43,9 @@ export const mapRedemptionCodeRead = (payload: RedemptionCodeRead): RedemptionRe
   })),
 })
 
-export const redemptionsApi = {
-  create: async (token: string, items: RedemptionPrizeSelection[]) => {
-    const result = await apiRequest<RedemptionCodeRead>('/redemptions', {
+export const codesApi = {
+  create: async (token: string, items: CodePrizeSelection[]) => {
+    const result = await apiRequest<CodeRead>('/codes', {
       method: 'POST',
       token,
       headers: {
@@ -54,22 +54,22 @@ export const redemptionsApi = {
       body: JSON.stringify({ items }),
     })
 
-    return mapRedemptionCodeRead(result)
+    return mapCodeRead(result)
   },
   readByCode: async (token: string, code: string) => {
-    const result = await apiRequest<RedemptionCodeRead>(`/redemptions/${encodeURIComponent(code)}`, {
+    const result = await apiRequest<CodeRead>(`/codes/${encodeURIComponent(code)}`, {
       method: 'GET',
       token,
     })
 
-    return mapRedemptionCodeRead(result)
+    return mapCodeRead(result)
   },
   cancel: async (token: string, code: string) => {
-    const result = await apiRequest<RedemptionCodeRead>(`/redemptions/${encodeURIComponent(code)}`, {
+    const result = await apiRequest<CodeRead>(`/codes/${encodeURIComponent(code)}`, {
       method: 'DELETE',
       token,
     })
 
-    return mapRedemptionCodeRead(result)
+    return mapCodeRead(result)
   },
 }

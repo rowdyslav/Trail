@@ -1,4 +1,4 @@
-﻿import { handleExpiredSession } from '../lib/sessionExpiration'
+import { handleExpiredSession } from '../lib/sessionExpiration'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8000'
 
@@ -46,4 +46,3 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return (await response.json()) as T
 }
 
-export { API_BASE_URL }

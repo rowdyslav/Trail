@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ApiError } from '../../../shared/api/http'
 import { scanApi, type ScanActivationResponse } from '../api/scanApi'
 
-export type ActivationState = 'loading' | 'success' | 'duplicate' | 'invalid' | 'unauthorized' | 'error'
+type ActivationState = 'loading' | 'success' | 'duplicate' | 'invalid' | 'unauthorized' | 'error'
 
 interface ActivationResult {
   state: Exclude<ActivationState, 'invalid' | 'unauthorized'>

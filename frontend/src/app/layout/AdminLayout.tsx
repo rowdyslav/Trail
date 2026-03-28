@@ -15,7 +15,7 @@ export function AdminLayout() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#5a645d]">Admin</p>
-            <h1 className="text-xl font-extrabold text-[#0f5238]">Kiosk / Redemption Desk</h1>
+            <h1 className="text-xl font-extrabold text-[#0f5238]">Kiosk / Code Desk</h1>
           </div>
           <div className="flex items-center gap-3">
             <button

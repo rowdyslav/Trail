@@ -1,36 +1,36 @@
-﻿import { apiRequest } from '../../../shared/api/http'
+import { apiRequest } from '../../../shared/api/http'
 
-export interface AdminRedemptionItem {
+export interface AdminCodeItem {
   prizeId: string
   title: string
   pointsCost: number
   quantity: number
 }
 
-export interface AdminRedemptionUser {
+export interface AdminCodeUser {
   id: string
   email: string
   streakDays: number
   rewardPoints: number
 }
 
-export interface AdminRedemptionValidation {
+export interface AdminCodeValidation {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   requestedPoints: number
   createdAt: string
-  user: AdminRedemptionUser
-  items: AdminRedemptionItem[]
+  user: AdminCodeUser
+  items: AdminCodeItem[]
   canConfirm: boolean
 }
 
-export interface AdminRedemptionConfirmation {
+export interface AdminCodeConfirmation {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   usedAt: string
   deductedPoints: number
-  user: AdminRedemptionUser
-  items: AdminRedemptionItem[]
+  user: AdminCodeUser
+  items: AdminCodeItem[]
 }
 
 interface UserRead {
@@ -40,49 +40,49 @@ interface UserRead {
   reward_points: number
 }
 
-interface RedemptionPrizeItemRead {
+interface CodePrizeItemRead {
   prize_id: string
   title: string
   points_cost: number
   quantity: number
 }
 
-interface RedemptionValidationRead {
+interface CodeValidationRead {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   requested_points: number
   created_at: string
   user: UserRead
-  items: RedemptionPrizeItemRead[]
+  items: CodePrizeItemRead[]
   can_confirm: boolean
 }
 
-interface RedemptionConfirmRead {
+interface CodeConfirmRead {
   code: string
   status: 'active' | 'used' | 'expired' | 'cancelled'
   used_at: string
   deducted_points: number
   user: UserRead
-  items: RedemptionPrizeItemRead[]
+  items: CodePrizeItemRead[]
 }
 
-const mapUser = (user: UserRead): AdminRedemptionUser => ({
+const mapUser = (user: UserRead): AdminCodeUser => ({
   id: user.id,
   email: user.email,
   streakDays: user.streak_days,
   rewardPoints: user.reward_points,
 })
 
-const mapItem = (item: RedemptionPrizeItemRead): AdminRedemptionItem => ({
+const mapItem = (item: CodePrizeItemRead): AdminCodeItem => ({
   prizeId: item.prize_id,
   title: item.title,
   pointsCost: item.points_cost,
   quantity: item.quantity,
 })
 
-export const adminRedemptionsApi = {
-  readByCode: async (code: string, token: string): Promise<AdminRedemptionValidation> => {
-    const result = await apiRequest<RedemptionValidationRead>(`/admin/redemptions/${encodeURIComponent(code)}`, {
+export const adminCodesApi = {
+  readByCode: async (code: string, token: string): Promise<AdminCodeValidation> => {
+    const result = await apiRequest<CodeValidationRead>(`/admin/codes/${encodeURIComponent(code)}`, {
       method: 'GET',
       token,
     })
@@ -97,8 +97,8 @@ export const adminRedemptionsApi = {
       canConfirm: result.can_confirm,
     }
   },
-  confirmByCode: async (code: string, token: string): Promise<AdminRedemptionConfirmation> => {
-    const result = await apiRequest<RedemptionConfirmRead>(`/admin/redemptions/${encodeURIComponent(code)}`, {
+  confirmByCode: async (code: string, token: string): Promise<AdminCodeConfirmation> => {
+    const result = await apiRequest<CodeConfirmRead>(`/admin/codes/${encodeURIComponent(code)}`, {
       method: 'PATCH',
       token,
     })

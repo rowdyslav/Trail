@@ -1,8 +1,8 @@
 import { Button } from '../../../shared/ui/Button'
-import type { RedemptionRequestItem } from '../../../shared/types/game'
+import type { CodeRequestItem } from '../../../shared/types/game'
 
-interface RedemptionConfirmationCardProps {
-  items: RedemptionRequestItem[]
+interface CodeConfirmationCardProps {
+  items: CodeRequestItem[]
   totalPoints: number
   balanceAfter: number
   isSubmitting: boolean
@@ -11,7 +11,7 @@ interface RedemptionConfirmationCardProps {
   onBack: () => void
 }
 
-export function RedemptionConfirmationCard({
+export function CodeConfirmationCard({
   items,
   totalPoints,
   balanceAfter,
@@ -19,7 +19,7 @@ export function RedemptionConfirmationCard({
   error,
   onConfirm,
   onBack,
-}: RedemptionConfirmationCardProps) {
+}: CodeConfirmationCardProps) {
   return (
     <section className="space-y-6 rounded-[2rem] bg-white p-6 shadow-[0_16px_40px_rgba(15,82,56,0.08)] sm:p-8">
       <div>

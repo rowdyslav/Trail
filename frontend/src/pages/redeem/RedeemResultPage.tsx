@@ -1,13 +1,13 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useRedemptionStore } from '../../features/redemption/model/useRedemptionStore'
+import { useCodeStore } from '../../features/code/model/useCodeStore'
 import { Button } from '../../shared/ui/Button'
 
 export function RedeemResultPage() {
   const navigate = useNavigate()
   const { requestId = '' } = useParams()
-  const request = useRedemptionStore((state) => state.getRedemptionById(requestId))
-  const cancelCurrentRedemption = useRedemptionStore((state) => state.cancelCurrentRedemption)
+  const request = useCodeStore((state) => state.getCodeById(requestId))
+  const cancelCurrentCode = useCodeStore((state) => state.cancelCurrentCode)
   const isActive = request?.status === 'active'
   const [isCancelling, setIsCancelling] = useState(false)
 
@@ -17,7 +17,7 @@ export function RedeemResultPage() {
 
   const handleCancel = async () => {
     setIsCancelling(true)
-    const result = await cancelCurrentRedemption()
+    const result = await cancelCurrentCode()
     setIsCancelling(false)
 
     if (result.success) {
@@ -28,7 +28,7 @@ export function RedeemResultPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8 pb-32">
       <section className="rounded-[2rem] bg-[#0f5238] p-6 text-white shadow-[0_20px_50px_rgba(15,82,56,0.18)] sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/70">Redemption code</p>
+        <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/70">Code</p>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight">Покажите этот код сотруднику</h1>
         <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/10 px-5 py-6 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/70">Код</p>

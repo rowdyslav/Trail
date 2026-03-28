@@ -54,12 +54,17 @@ export interface PaymentRead {
   is_confirmed: boolean
 }
 
-export interface RouteWithViewerState extends RouteRead {
+interface RouteWithViewerState extends RouteRead {
   is_purchased: boolean
   is_available: boolean
   is_active: boolean
   is_completed: boolean
   scanned_places_count: number
+}
+
+export interface RouteViewerProfileState {
+  activeRouteId?: string | null
+  purchasedRouteIds?: string[]
 }
 
 const routeImages: Record<RouteAccessType, string[]> = {
@@ -244,15 +249,18 @@ const mapRouteToRouteDetails = (route: RouteWithViewerState): RouteDetails => {
   }
 }
 
-const normalizeRoute = (route: RouteRead): RouteWithViewerState => {
-  const isPurchased = route.route_type === 'free' || Boolean(route.is_purchased)
+const normalizeRoute = (route: RouteRead, viewerState?: RouteViewerProfileState): RouteWithViewerState => {
+  const purchasedRouteIds = viewerState?.purchasedRouteIds ?? []
+  const isPurchasedFromProfile = route.route_type === 'free' || purchasedRouteIds.includes(route.id)
+  const isPurchased = route.is_purchased ?? isPurchasedFromProfile
+  const isActive = route.is_active ?? (viewerState?.activeRouteId === route.id)
   const isCompleted = Boolean(route.is_completed)
 
   return {
     ...route,
     is_purchased: isPurchased,
     is_available: route.is_available ?? isPurchased,
-    is_active: Boolean(route.is_active),
+    is_active: isActive,
     is_completed: isCompleted,
     scanned_places_count: route.scanned_places_count ?? 0,
   }
@@ -301,16 +309,16 @@ export const routesApi = {
       token,
     })
   },
-  normalize(route: RouteRead) {
-    return normalizeRoute(route)
+  normalize(route: RouteRead, viewerState?: RouteViewerProfileState) {
+    return normalizeRoute(route, viewerState)
   },
-  normalizeMany(routes: RouteRead[]) {
-    return routes.map(normalizeRoute)
+  normalizeMany(routes: RouteRead[], viewerState?: RouteViewerProfileState) {
+    return routes.map((route) => normalizeRoute(route, viewerState))
   },
-  toCatalogRoutes(routes: RouteRead[]) {
-    return routes.map((route, index) => mapRouteToCatalogRoute(normalizeRoute(route), index))
+  toCatalogRoutes(routes: RouteRead[], viewerState?: RouteViewerProfileState) {
+    return routes.map((route, index) => mapRouteToCatalogRoute(normalizeRoute(route, viewerState), index))
   },
-  toRouteDetails(route: RouteRead | null) {
-    return route ? mapRouteToRouteDetails(normalizeRoute(route)) : null
+  toRouteDetails(route: RouteRead | null, viewerState?: RouteViewerProfileState) {
+    return route ? mapRouteToRouteDetails(normalizeRoute(route, viewerState)) : null
   },
 }

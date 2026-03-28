@@ -1,4 +1,4 @@
-﻿import type { StreakKey } from '../types/game'
+import type { StreakKey } from '../types/game'
 
 export const avatarByStreakKey: Record<StreakKey, string> = {
   novice: '/img/level_1.png',
