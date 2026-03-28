@@ -15,6 +15,5 @@ async def load_user(email: str) -> User | None:
 @admin_login_manager.user_loader()
 async def load_admin(email: str) -> Admin | None:
     return await Admin.find_one(
-        Admin.email == email,
-        Admin.is_active == True,  # noqa: E712
+        Admin.email == email
     )

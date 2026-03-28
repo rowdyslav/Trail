@@ -19,34 +19,62 @@ db = client[ENV.mongo_database_name]
 
 DEMO_ROUTES = (
     {
-        "title": "Historic center",
-        "description": "Short route through the main landmarks in the city center.",
+        "title": "Исторический центр Рязани",
+        "description": "Небольшой маршрут по главным достопримечательностям центра Рязани.",
         "route_type": RouteType.FREE,
         "reward_points_on_completion": 0,
         "places": (
             {
-                "title": "Old square",
-                "qr_code_value": "center-square-001",
+                "title": "Рязанский кремль",
+                "qr_code_value": "ryazan-kremlin-001",
             },
             {
-                "title": "City arch",
-                "qr_code_value": "center-arch-002",
+                "title": "Соборная колокольня",
+                "qr_code_value": "sobornaya-belltower-002",
+            },
+            {
+                "title": "Улица Почтовая",
+                "qr_code_value": "pochtovaya-street-003",
             },
         ),
     },
     {
-        "title": "Park quest",
-        "description": "Route through the green zone with a reward after full completion.",
+        "title": "Прогулка по Мещёрскому краю",
+        "description": "Маршрут по природным и культурным точкам Спас-Клепиковского района.",
         "route_type": RouteType.PAID,
         "reward_points_on_completion": 150,
         "places": (
             {
-                "title": "Main park gate",
-                "qr_code_value": "park-gate-001",
+                "title": "Национальный парк «Мещёра»",
+                "qr_code_value": "meshchera-park-001",
             },
             {
-                "title": "Viewpoint",
-                "qr_code_value": "park-view-002",
+                "title": "Музей Сергея Есенина в Спас-Клепиках",
+                "qr_code_value": "esenin-museum-klepiki-002",
+            },
+            {
+                "title": "Озеро Белое",
+                "qr_code_value": "beloe-lake-003",
+            },
+        ),
+    },
+    {
+        "title": "По есенинским местам",
+        "description": "Маршрут по знаковым точкам, связанным с Сергеем Есениным и старинным селом Константиново.",
+        "route_type": RouteType.PAID,
+        "reward_points_on_completion": 220,
+        "places": (
+            {
+                "title": "Государственный музей-заповедник С. А. Есенина",
+                "qr_code_value": "esenin-museum-001",
+            },
+            {
+                "title": "Казанская церковь в Константинове",
+                "qr_code_value": "kazan-church-konstantinovo-002",
+            },
+            {
+                "title": "Смотровая площадка над Окой",
+                "qr_code_value": "oka-viewpoint-003",
             },
         ),
     },
@@ -54,20 +82,20 @@ DEMO_ROUTES = (
 
 DEMO_PRIZES = (
     {
-        "title": "Trail mug",
-        "description": "Branded mug.",
+        "title": "Кружка Trail",
+        "description": "Фирменная керамическая кружка.",
         "points_cost": 120,
         "is_active": True,
     },
     {
-        "title": "Trail shopper",
-        "description": "Reusable branded tote bag.",
+        "title": "Шоппер Trail",
+        "description": "Многоразовая фирменная сумка для прогулок и поездок.",
         "points_cost": 180,
         "is_active": True,
     },
     {
-        "title": "Sticker pack",
-        "description": "Small pack of branded stickers.",
+        "title": "Набор стикеров Trail",
+        "description": "Небольшой набор фирменных наклеек.",
         "points_cost": 60,
         "is_active": True,
     },
@@ -76,7 +104,6 @@ DEMO_PRIZES = (
 DEMO_ADMINS = (
     {
         "email": "admin@example.com",
-        "title": "Demo admin",
         "password": "admin123",
     },
 )

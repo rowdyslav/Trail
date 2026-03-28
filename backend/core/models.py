@@ -47,9 +47,7 @@ class User(PasswordMixin, Document):
 
 class Admin(PasswordMixin, Document):
     email: Annotated[EmailStr, Indexed(unique=True)]
-    title: str
     hashed_password: str
-    is_active: bool = True
 
     class Settings:
         name = "admins"
